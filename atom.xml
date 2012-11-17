@@ -4,7 +4,7 @@
   <title><![CDATA[木头人 - Zonyitoo Blog]]></title>
   <link href="http://zonyitoo.github.com/atom.xml" rel="self"/>
   <link href="http://zonyitoo.github.com/"/>
-  <updated>2012-10-22T14:26:52+08:00</updated>
+  <updated>2012-11-17T16:37:31+08:00</updated>
   <id>http://zonyitoo.github.com/</id>
   <author>
     <name><![CDATA[Yutang Chung]]></name>
@@ -12,6 +12,21 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[博客复活]]></title>
+    <link href="http://zonyitoo.github.com/blog/2012/11/17/bo-ke-fu-huo/"/>
+    <updated>2012-11-17T16:33:00+08:00</updated>
+    <id>http://zonyitoo.github.com/blog/2012/11/17/bo-ke-fu-huo</id>
+    <content type="html"><![CDATA[<h2>Hi，我复活了！</h2>
+
+<p>之前因为重装系统的关系，博客的本地备份不小心被删掉了，而又很蛋疼地因为某些原因而不经常备份，所以整个博客都没有了。</p>
+
+<p>在努力恢复了一些博文（这可是一个非常之烦的过程，后来就抛弃了一些认为不太重要的博文不恢复了），然后把原来的博客删掉重新部署了一个（就是你们现在看到的这个）。</p>
+
+<h3>AnyWay..反正我回来了，有时间就写写Blog吧！</h3>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Arch软件安装小记之“Gnome Tweak Tool”]]></title>
