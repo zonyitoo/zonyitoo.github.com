@@ -1,0 +1,391 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Android与服务器进行通信的问题 - 木头人 - Zonyitoo Blog</title>
+  <meta name="author" content="Yutang Chung">
+
+  
+  <meta name="description" content="最近没有什么比较有趣而又有挑战性的项目在手，只好继续在WHJ老师的实验室里面准备搞ARM开发，唯一期待的就是准备筹建的参加全国大赛的机器人队，希望到时去面试能进！我正在怀疑我当时是不是应该选电子系而不是计算机系，毕竟现在表现得就像对底层的兴趣高于对前台开发或软件开发的兴趣。 题外话说多了，入正题， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://zonyitoo.github.com/blog/2012/04/14/androidyu-fu-wu-qi-jin-xing-tong-xin-de-wen-ti">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/bootstrap/bootstrap.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/stylesheets/bootstrap/responsive.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/stylesheets/syntax/syntax.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    body {
+      padding-top: 60px;
+      padding-bottom: 40px;
+    }
+    h1 {
+      margin-bottom: 15px;
+    }
+    .sharing, .meta {
+      margin: 20px 0px 20px 0px;
+    }
+    .pager {
+      margin: 20px 0px 5px 0px;
+    }
+    .page-footer p {
+      text-align: center;
+    }
+  </style>
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="木头人 - Zonyitoo Blog" type="application/atom+xml">
+  
+  
+
+</head>
+
+<body   >
+  <nav role="navigation"><div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+
+      <a class="brand" href="/">木头人 - Zonyitoo Blog</a>
+
+      <div class="nav-collapse">
+        <ul class="nav">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+      </div>
+
+      <ul class="nav pull-right" data-subscription="rss">
+        <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+        
+      </ul>
+
+        
+      <form class="pull-right navbar-search" action="http://google.com/search" method="get">
+        <fieldset role="search">
+          <input type="hidden" name="q" value="site:zonyitoo.github.com" />
+          <input class="search-query" type="text" name="q" results="0" placeholder="Search"/>
+        </fieldset>
+      </form>
+        
+    </div>
+  </div>
+</div>
+</nav>
+  <div class="container">
+    <div class="row-fluid">
+      
+<article class="hentry span9" role="article">
+
+  
+  <header class="page-header">
+    
+      <h1 class="entry-title">Android与服务器进行通信的问题</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-04-14T13:11:00+08:00" pubdate data-updated="true">Apr 14<span>th</span>, 2012</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>最近没有什么比较有趣而又有挑战性的项目在手，只好继续在<strong>WHJ</strong>老师的实验室里面准备搞ARM开发，唯一期待的就是准备筹建的参加全国大赛的机器人队，希望到时去面试能进！我正在怀疑我当时是不是应该选电子系而不是计算机系，毕竟现在表现得就像对底层的兴趣高于对前台开发或软件开发的兴趣。</p>
+
+<p>题外话说多了，入正题，这次探讨的是Android与Django架构服务器之间通信中遇到的问题及我的解决方法</p>
+
+<h1>应答字符串为JSON格式时，字符串两端会自动加上一个双引号</h1>
+
+<p>这个题目很奇怪，让人看起来不知道是在讲什么，我们来看一个实际例子</p>
+
+<ul>
+<li>手机这边向服务器请求用户登录，发送JSON字符串为</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span><span class="s2">&quot;user_name&quot;</span><span class="o">:</span> <span class="nx">user_name</span><span class="p">,</span> <span class="s2">&quot;user_password&quot;</span><span class="o">:</span> <span class="nx">user_password</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>服务器端收到的JSON字符串为</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="s2">&quot;{&quot;</span><span class="nx">user_name</span><span class="s2">&quot;: user_name, &quot;</span><span class="nx">user_password</span><span class="s2">&quot;: user_password}&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>反之亦然。</p>
+
+<p>发现不同了么？对了，就是左右两端多了个引号。这个BUG非常隐秘，这两个符号足足困扰了我三天才注意到它多了这么两个符号，导致整个字符串从一个JSONObject变成了一个String类型，直接写入JSONObject的构造函数会抛出JSONException</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">responseStr</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
+</span><span class='line'><span class="n">JSONTokener</span> <span class="n">tokener</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JSONTokener</span><span class="o">(</span><span class="n">responseStr</span><span class="o">);</span>
+</span><span class='line'><span class="n">JSONObject</span> <span class="n">jsonobj</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JSONObject</span><span class="o">((</span><span class="n">String</span><span class="o">)</span> <span class="n">tokener</span><span class="o">.</span><span class="na">nextValue</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当然，看到这里一般来说都会想到，直接用substring取出中间那段字符不就行了么？是的，我刚开始也是这样想的，问题是不行，JSONObject的构造函数同样会解释错误，只有这样才是对的…</p>
+
+<p>但是，在服务器端用Python的substring却可以…非常怪异。</p>
+
+<h1>发送密码用Base64加密的问题</h1>
+
+<p>Android自身带有Base64加密与解密的包，可以方便地加密密码方便传输。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">res</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'><span class="n">String</span> <span class="n">encode_str</span> <span class="o">=</span> <span class="n">Base64</span><span class="o">.</span><span class="na">encodeToString</span><span class="o">(</span><span class="n">res</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">Base64</span><span class="o">.</span><span class="na">DEFAULT</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>看起来用法与Java所带的sun.misc的<code>Base64Encoder</code>这些用法差不多，但应该留意到了，在encode的时候，会有一个参数Flags（即上面代码中的<code>Base64.DEFAULT</code>）</p>
+
+<p>这个参数有什么用呢？根据Android SDK的描述，这种参数有5个：</p>
+
+<blockquote><ol>
+<li>CRLF 这个参数看起来比较眼熟，它就是Win风格的换行符，意思就是使用CR LF这一对作为一行的结尾而不是Unix风格的LF</li>
+<li>DEFAULT 这个参数是默认，使用默认的方法来加密</li>
+<li>NO_PADDING 这个参数是略去加密字符串最后的”=”</li>
+<li>NO_WRAP 这个参数意思是略去所有的换行符（设置后CRLF就没用了）</li>
+<li>URL_SAFE 这个参数意思是加密时不使用对URL和文件名有特殊意义的字符来作为加密字符，具体就是以-和_取代+和/</li>
+</ol>
+</blockquote>
+
+<p>若用<code>Base64.DEFAULT</code>发送服务器不能识别，则应该选用<code>Base64.NO_WRAP | Baser64.URL_SAFE</code>来加密</p>
+
+<blockquote><p>例如原字符串为：QUFodH?????</p>
+
+<p>用DEFAULT加密后为：UVVGb2RIPz8/Pz8=</p>
+
+<p>用NO_WRAP | URL_SAFE加密后为：UVVGb2RIPz8_Pz8=</p>
+
+<p>用sun.misc.BASE64Encoder加密后为：UVVGb2RIPz8/Pz8=</p></blockquote>
+
+<p>由上面例子可以清楚见到，<code>DEFAULT</code>加密方式出现了/这个URL中会比较敏感的字符，而<code>URL_SAFE</code>方法加密则不会出现</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Yutang Chung</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-04-14T13:11:00+08:00" pubdate data-updated="true">Apr 14<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/android/'>Android</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://zonyitoo.github.com/blog/2012/04/14/androidyu-fu-wu-qi-jin-xing-tong-xin-de-wen-ti/" data-via="zonyitoo" data-counturl="http://zonyitoo.github.com/blog/2012/04/14/androidyu-fu-wu-qi-jin-xing-tong-xin-de-wen-ti/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+    
+    <ul class="pager">
+      
+      <li><a href="/blog/archives">Blog Archives</a></li>
+      
+      <li class="next"><a class="basic-alignment right" href="/blog/2012/04/14/octopressan-zhuang-shou-ji/"
+        title="Next Post: Octopress安装手记">Octopress安装手记
+        &raquo;</a></li>
+      
+    </ul>
+  </footer>
+</article>
+
+<aside class="sidebar-nav span3">
+  
+    <section class="well">
+  <ul id="recent_posts" class="nav nav-list">
+    <li class="nav-header">Recent Posts</li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/22/archruan-jian-an-zhuang-xiao-ji-zhi-gnome-tweak-tool/">Arch软件安装小记之“Gnome Tweak Tool”</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/04/22/archan-zhuang-xiao-ji/">Arch安装小记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/04/17/soj-1211-dot-shang-ren-de-xuan-chuan-ti-jie/">SOJ 1211.商人的宣传 题解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/04/15/qian-ru-shi-linuxxue-xi-si-lu-ji-can-kao-zi-liao-arm-plus-linuxlu-xian/">嵌入式Linux学习思路及参考资料(ARM+LINUX路线)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/04/14/octopresszhu-ti-ji.markdown/">Octopress主题集</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=5&isTitle=1&noborder=1&isWeibo=1&isFans=1&uid=1725113620&verifier=cb60d2fc&dpc=1"></iframe>
+</section>
+<section class="well">
+  <ul id="gh_repos" class="nav">
+    <li class="nav-header">GitHub Repos</li>
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/Zonyitoo">@Zonyitoo</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Zonyitoo',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section class="well">
+  <ul id="tweets" class="nav">
+    <li class="nav-header">Latest Tweets</li>
+    <li class="loading">Status updating...</li>
+  </ul>
+  <script type="text/javascript">
+    $.domReady(function(){
+      getTwitterFeed("zonyitoo", 4, false);
+    });
+  </script>
+  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
+  
+    <a href="http://twitter.com/zonyitoo" class="twitter-follow-button" data-show-count="false">Follow @zonyitoo</a>
+  
+</section>
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo" class="page-footer"><hr>
+<p>
+  Copyright &copy; 2012 - Yutang Chung -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'sysuzonyitooblog';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://zonyitoo.github.com/blog/2012/04/14/androidyu-fu-wu-qi-jin-xing-tong-xin-de-wen-ti/';
+        var disqus_url = 'http://zonyitoo.github.com/blog/2012/04/14/androidyu-fu-wu-qi-jin-xing-tong-xin-de-wen-ti/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

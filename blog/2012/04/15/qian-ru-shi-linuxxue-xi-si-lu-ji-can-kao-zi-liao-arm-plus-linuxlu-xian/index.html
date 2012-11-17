@@ -1,0 +1,423 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>嵌入式Linux学习思路及参考资料(ARM+LINUX路线) - 木头人 - Zonyitoo Blog</title>
+  <meta name="author" content="Yutang Chung">
+
+  
+  <meta name="description" content="嵌入式人才需求 嵌入式应用工程师：主要面向计算机、软件工程相关专业。其基于某个平台，例如嵌入式Linux、Vxworks、WinCE的上层应用软件开发，开发语言主要采用嵌入式C/C++，主要领域网络、图形、数据库、音频、视频处理等。
+嵌入式系统工程师：主要面向电子信息相关专业，基于某个处理器内核， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://zonyitoo.github.com/blog/2012/04/15/qian-ru-shi-linuxxue-xi-si-lu-ji-can-kao-zi-liao-arm-plus-linuxlu-xian">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/bootstrap/bootstrap.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/stylesheets/bootstrap/responsive.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/stylesheets/syntax/syntax.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    body {
+      padding-top: 60px;
+      padding-bottom: 40px;
+    }
+    h1 {
+      margin-bottom: 15px;
+    }
+    .sharing, .meta {
+      margin: 20px 0px 20px 0px;
+    }
+    .pager {
+      margin: 20px 0px 5px 0px;
+    }
+    .page-footer p {
+      text-align: center;
+    }
+  </style>
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="木头人 - Zonyitoo Blog" type="application/atom+xml">
+  
+  
+
+</head>
+
+<body   >
+  <nav role="navigation"><div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+
+      <a class="brand" href="/">木头人 - Zonyitoo Blog</a>
+
+      <div class="nav-collapse">
+        <ul class="nav">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+      </div>
+
+      <ul class="nav pull-right" data-subscription="rss">
+        <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+        
+      </ul>
+
+        
+      <form class="pull-right navbar-search" action="http://google.com/search" method="get">
+        <fieldset role="search">
+          <input type="hidden" name="q" value="site:zonyitoo.github.com" />
+          <input class="search-query" type="text" name="q" results="0" placeholder="Search"/>
+        </fieldset>
+      </form>
+        
+    </div>
+  </div>
+</div>
+</nav>
+  <div class="container">
+    <div class="row-fluid">
+      
+<article class="hentry span9" role="article">
+
+  
+  <header class="page-header">
+    
+      <h1 class="entry-title">嵌入式Linux学习思路及参考资料(ARM+LINUX路线)</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-04-15T13:17:00+08:00" pubdate data-updated="true">Apr 15<span>th</span>, 2012</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h1>嵌入式人才需求</h1>
+
+<ol>
+<li><strong>嵌入式应用工程师</strong>：主要面向计算机、软件工程相关专业。其基于某个平台，例如嵌入式Linux、Vxworks、WinCE的上层应用软件开发，开发语言主要采用嵌入式C/C++，主要领域网络、图形、数据库、音频、视频处理等。</li>
+<li>嵌入式系统工程师：主要面向电子信息相关专业，基于某个处理器内核，例如ARM、MIPS、PPC等，主要开发语言为汇编语言及嵌入式C语言编程，主要从事BootLoader、操作系统及中间件移植等工作。</li>
+<li><strong>嵌入式驱动工程师</strong>：主要面向电子信息、计算机相关专业，基于某个处理器，例如2410、2440、6410等平台，开发语言主要为嵌入式C语言，主要从事接口驱动</li>
+</ol>
+
+
+<h2>嵌入式学生都应具备以下基本能力</h2>
+
+<ol>
+<li><strong>至少</strong>一种嵌入式处理器（ARM）</li>
+<li><strong>至少</strong>一种嵌入式操作系统（LINUX）</li>
+<li>一套嵌入式开发工具（ADS、GCC、嵌入式交叉编译调试环境）</li>
+<li>一类开发语言（ARM汇编、C/C++）</li>
+</ol>
+
+
+<p>另外，必须熟悉嵌入式软件开发流程并至少做一个嵌入式软件项目。</p>
+
+<h1>从事嵌入式软件开发的好处</h1>
+
+<ol>
+<li>目前国内外这方面的人都很<strong>稀缺</strong></li>
+<li>与企业计算等应用软件不同，嵌入式领域人才的工作强度通常低一些（但收入不低）</li>
+<li>嵌入式不像应用软件那样容易被盗版</li>
+</ol>
+
+
+<h1>从事嵌入式软件开发的缺点</h1>
+
+<ol>
+<li><strong>入门起点较高</strong>，所用到的技术往往都有一定的难度，若软硬件基础不好，特别是操作系统级软件功底不深，则可能不适于此行。</li>
+<li>这方面的企业数量要<strong>远少</strong>于企业计算类企业</li>
+<li>有少数公司经常要硕士以上的人搞嵌入式，主要是基于嵌入式的难度，但大多数公司也并无此要求，只要有经验即可</li>
+<li>平台依托强，换平台比较辛苦</li>
+</ol>
+
+
+<h1>方法步骤</h1>
+
+<h2>1. 基础知识</h2>
+
+<ul>
+<li>数字电路</li>
+<li>计算机组成原理</li>
+<li>C/C++，嵌入式C</li>
+<li>数据结构和算法</li>
+<li>操作系统</li>
+<li>网络</li>
+<li>数据库</li>
+</ul>
+
+
+<p><strong>C语言参考书：</strong>
+* The C++ Programming Language
+* Pointers on C
+* C traps and pitfalls
+* Expert C Language</p>
+
+<h2>2. Linux学习</h2>
+
+<blockquote><p>使用Linux Linux应用编程开发 驱动开发和分析Linux内核</p></blockquote>
+
+<p><strong>Linux基础参考书：</strong>
+* 《Linux与Unix Shell编程指南》
+* 《Red Head Linux 9系统管理与服务器配置》人民邮电出版社</p>
+
+<p><strong>Linux应用编程开发：</strong>
+* 《UNIX Network Programming（第3版）》机械工业出版社 网络编程用
+* 《UNIX环境高级编程（第2版）》清华大学出版社 系统调用及编程工具书
+* 《Linux高级程序设计（第2版）》人民邮电出版社 杨宗德 系统调用及编程，有很多救命，初学者很不错</p>
+
+<p><strong>驱动开发和分析Linux内核：</strong>
+* 《Linux内核设计与实现》陈莉君 机械工业出版社
+* 《Linux设备驱动开发》中国电力出版社</p>
+
+<h2>ARM＋Linux嵌入式系统开发</h2>
+
+<p><strong>ARM基础学习</strong></p>
+
+<ul>
+<li>《嵌入式ARM系统原理与实例开发（第2版）》北京大学出版社
+*《ARM体系结构与编程》杜春雷</li>
+<li>S3C2410 Datasheet</li>
+</ul>
+
+
+<p><strong>嵌入Linux开发</strong>
+买块板子，调试程序</p>
+
+<blockquote><p>其实很多人有误区，觉得学嵌入式要有板子，在后期确实如此，但如果基础达不到，也就把例子拿来跑跑，只有以上基础，基本功达到才能够真正开发</p></blockquote>
+
+<h2>深入学习</h2>
+
+<ol>
+<li>数字图像压缩技术：主要是应掌握MPEG、MP3等编解码算法和技术</li>
+<li>通信协议及编程技术：TCP/IP协议、802.11、Bluetooth、GPRS、GSM、CDMA等</li>
+<li>网络与信息安全技术：如加密技术、数据证书CA等</li>
+<li>DSP（Digital Signal Process）技术，DSP处理器通过硬件实现数字信号处理算法</li>
+</ol>
+
+
+<h1>引用</h1>
+
+<p>本文引用自<a href="http://www.mcuos.com/thread-5302-1-1.html">嵌入式开发联盟网版主</a>osboy的文章《嵌入式Linux学习思路及参考资料（ARM+LINUX路线）》</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Yutang Chung</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-04-15T13:17:00+08:00" pubdate data-updated="true">Apr 15<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/embedded-/'>Embedded,</a>, <a class='category' href='/blog/categories/linux/'>Linux</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://zonyitoo.github.com/blog/2012/04/15/qian-ru-shi-linuxxue-xi-si-lu-ji-can-kao-zi-liao-arm-plus-linuxlu-xian/" data-via="zonyitoo" data-counturl="http://zonyitoo.github.com/blog/2012/04/15/qian-ru-shi-linuxxue-xi-si-lu-ji-can-kao-zi-liao-arm-plus-linuxlu-xian/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+    
+    <ul class="pager">
+      
+      <li class="previous"><a class="basic-alignment left"
+        href="/blog/2012/04/14/octopresszhu-ti-ji.markdown/" title="Previous Post:
+        Octopress主题集">&laquo; Octopress主题集</a></li>
+      
+      <li><a href="/blog/archives">Blog Archives</a></li>
+      
+      <li class="next"><a class="basic-alignment right" href="/blog/2012/04/17/soj-1211-dot-shang-ren-de-xuan-chuan-ti-jie/"
+        title="Next Post: SOJ 1211.商人的宣传 题解">SOJ 1211.商人的宣传 题解
+        &raquo;</a></li>
+      
+    </ul>
+  </footer>
+</article>
+
+<aside class="sidebar-nav span3">
+  
+    <section class="well">
+  <ul id="recent_posts" class="nav nav-list">
+    <li class="nav-header">Recent Posts</li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/22/archruan-jian-an-zhuang-xiao-ji-zhi-gnome-tweak-tool/">Arch软件安装小记之“Gnome Tweak Tool”</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/04/22/archan-zhuang-xiao-ji/">Arch安装小记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/04/17/soj-1211-dot-shang-ren-de-xuan-chuan-ti-jie/">SOJ 1211.商人的宣传 题解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/04/15/qian-ru-shi-linuxxue-xi-si-lu-ji-can-kao-zi-liao-arm-plus-linuxlu-xian/">嵌入式Linux学习思路及参考资料(ARM+LINUX路线)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/04/14/octopresszhu-ti-ji.markdown/">Octopress主题集</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=5&isTitle=1&noborder=1&isWeibo=1&isFans=1&uid=1725113620&verifier=cb60d2fc&dpc=1"></iframe>
+</section>
+<section class="well">
+  <ul id="gh_repos" class="nav">
+    <li class="nav-header">GitHub Repos</li>
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/Zonyitoo">@Zonyitoo</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Zonyitoo',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section class="well">
+  <ul id="tweets" class="nav">
+    <li class="nav-header">Latest Tweets</li>
+    <li class="loading">Status updating...</li>
+  </ul>
+  <script type="text/javascript">
+    $.domReady(function(){
+      getTwitterFeed("zonyitoo", 4, false);
+    });
+  </script>
+  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
+  
+    <a href="http://twitter.com/zonyitoo" class="twitter-follow-button" data-show-count="false">Follow @zonyitoo</a>
+  
+</section>
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo" class="page-footer"><hr>
+<p>
+  Copyright &copy; 2012 - Yutang Chung -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'sysuzonyitooblog';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://zonyitoo.github.com/blog/2012/04/15/qian-ru-shi-linuxxue-xi-si-lu-ji-can-kao-zi-liao-arm-plus-linuxlu-xian/';
+        var disqus_url = 'http://zonyitoo.github.com/blog/2012/04/15/qian-ru-shi-linuxxue-xi-si-lu-ji-can-kao-zi-liao-arm-plus-linuxlu-xian/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
