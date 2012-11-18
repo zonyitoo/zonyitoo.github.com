@@ -4,7 +4,7 @@
   <title><![CDATA[Category: ComputerGraphics | 木头人 - 宇騰]]></title>
   <link href="http://zonyitoo.github.com/blog/categories/computergraphics/atom.xml" rel="self"/>
   <link href="http://zonyitoo.github.com/"/>
-  <updated>2012-11-18T19:33:06+08:00</updated>
+  <updated>2012-11-18T19:46:13+08:00</updated>
   <id>http://zonyitoo.github.com/</id>
   <author>
     <name><![CDATA[Yutang Chung]]></name>
@@ -193,7 +193,7 @@ if (!dir1) {
     // 若左脚角度小于-105，那么左腿小腿向前踢
     else if (leftHigherLegAngle &lt; -105) leftLowerLegAngle -= 6;
 
-    // 若已经达到-120度（大腿的运动范围为[-120, -60]
+    // 若已经达到-120度（大腿的运动范围为[-120, -60]）
     if (leftHigherLegAngle == -120) {
         dir1 = true;
     }
@@ -482,6 +482,8 @@ glutSwapBuffers(); // 切换到另一个缓冲区（打开了GLUT_DOUBLE的所�
 ```</p>
 
 <h1>成果</h1>
+
+<p><embed src="http://player.youku.com/player.php/sid/XNDc2NzA4NjM2/v.swf" allowFullScreen="true" quality="high" width="480" height="400" align="middle" allowScriptAccess="always" type="application/x-shockwave-flash"></embed></p>
 
 <h1>小结</h1>
 

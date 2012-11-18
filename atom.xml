@@ -4,7 +4,7 @@
   <title><![CDATA[木头人 - 宇騰]]></title>
   <link href="http://zonyitoo.github.com/atom.xml" rel="self"/>
   <link href="http://zonyitoo.github.com/"/>
-  <updated>2012-11-18T19:33:06+08:00</updated>
+  <updated>2012-11-18T19:46:13+08:00</updated>
   <id>http://zonyitoo.github.com/</id>
   <author>
     <name><![CDATA[Yutang Chung]]></name>
@@ -337,7 +337,7 @@
 </span><span class='line'>        <span class="c1">// 若左脚角度小于-105，那么左腿小腿向前踢</span>
 </span><span class='line'>        <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">leftHigherLegAngle</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">105</span><span class="p">)</span> <span class="n">leftLowerLegAngle</span> <span class="o">-=</span> <span class="mi">6</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="c1">// 若已经达到-120度（大腿的运动范围为[-120, -60]</span>
+</span><span class='line'>        <span class="c1">// 若已经达到-120度（大腿的运动范围为[-120, -60]）</span>
 </span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">leftHigherLegAngle</span> <span class="o">==</span> <span class="o">-</span><span class="mi">120</span><span class="p">)</span> <span class="p">{</span>
 </span><span class='line'>            <span class="n">dir1</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
 </span><span class='line'>        <span class="p">}</span>
@@ -804,6 +804,8 @@
 
 
 <h1>成果</h1>
+
+<p><embed src="http://player.youku.com/player.php/sid/XNDc2NzA4NjM2/v.swf" allowFullScreen="true" quality="high" width="480" height="400" align="middle" allowScriptAccess="always" type="application/x-shockwave-flash"></embed></p>
 
 <h1>小结</h1>
 
