@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[木头人 - Zonyitoo Blog]]></title>
+  <title><![CDATA[木头人 - Yutang]]></title>
   <link href="http://zonyitoo.github.com/atom.xml" rel="self"/>
   <link href="http://zonyitoo.github.com/"/>
-  <updated>2012-11-17T16:37:31+08:00</updated>
+  <updated>2012-11-18T18:04:27+08:00</updated>
   <id>http://zonyitoo.github.com/</id>
   <author>
     <name><![CDATA[Yutang Chung]]></name>
@@ -25,6 +25,8 @@
 <p>在努力恢复了一些博文（这可是一个非常之烦的过程，后来就抛弃了一些认为不太重要的博文不恢复了），然后把原来的博客删掉重新部署了一个（就是你们现在看到的这个）。</p>
 
 <h3>AnyWay..反正我回来了，有时间就写写Blog吧！</h3>
+
+<p>大家觉得我的新主题怎么样？</p>
 ]]></content>
   </entry>
   
