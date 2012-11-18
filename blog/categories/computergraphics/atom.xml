@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: ComputerGraphics | 木头人 - 宇騰]]></title>
+  <link href="http://zonyitoo.github.com/blog/categories/computergraphics/atom.xml" rel="self"/>
+  <link href="http://zonyitoo.github.com/"/>
+  <updated>2012-11-18T19:33:06+08:00</updated>
+  <id>http://zonyitoo.github.com/</id>
+  <author>
+    <name><![CDATA[Yutang Chung]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[OpenGL制作虚拟人运动]]></title>
+    <link href="http://zonyitoo.github.com/blog/2012/11/18/openglzhi-zuo-xu-ni-ren-yun-dong/"/>
+    <updated>2012-11-18T18:12:00+08:00</updated>
+    <id>http://zonyitoo.github.com/blog/2012/11/18/openglzhi-zuo-xu-ni-ren-yun-dong</id>
+    <content type="html"><![CDATA[<h1>前言</h1>
+
+<p>这次的制作其实是计算机图形学的作业，也是我第一次接触OpenGL，一个星期从零开始学习OpenGL并制作虚拟人走动模型。</p>
+
+<p>代码托管于GitHub的<a href="https://github.com/zonyitoo/HumanWalking">HumanWalking</a>。</p>
+
+<h2>目标</h2>
+
+<ul>
+<li>虚拟的类人形模型</li>
+<li>可以自由走动</li>
+<li>完全使用OpenGL实现</li>
+<li>可以控制人的走动方向</li>
+<li>可以控制视角方向</li>
+</ul>
+
+
+<h1>从主函数开始</h1>
+
+<p>```cpp
+int main(int argc, char **argv) {</p>
+
+<pre><code>glutInit(&amp;argc, argv);
+glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+glutInitWindowSize(500, 500);
+glutInitWindowPosition(100, 100);
+glutCreateWindow(argv[0]);
+init();
+glutDisplayFunc(display);
+glutReshapeFunc(reshape);
+glutKeyboardFunc(keyboard);
+glutPassiveMotionFunc(passiveMotionFunc);
+calculateData(0);
+glutMainLoop();
+return 0;
+</code></pre>
+
+<p>}
+```</p>
+
+<ul>
+<li><p>先调用<code>glutInit</code>函数初始化OpenGL环境</p></li>
+<li><p>设定OpenGL的显示模式，在这里启动了<code>GLUT_DOUBLE</code>双缓冲、<code>GLUT_RGB</code>RGB显示模式（区分于颜色索引模式）、<code>GLUT_DEPTH</code>深度模式（三维）。</p></li>
+<li><p>设置GLUT显示窗口大小，这里是500*500像素</p></li>
+<li><p>设置GLUT初始显示位置（窗口左上角位置）：(x,y)=(100,100)</p></li>
+<li><p>调用<code>glutCreateWindow</code>来创建窗口，传入参数为窗口的名字，但此时窗口并不会显示，直到调用<code>glutMainLoop</code>才会显示</p></li>
+<li><p>调用<code>init</code>函数来做一些初始化工作
+```cpp
+void init(void) {
+  glClearColor(0.0, 0.0, 0.0, 0.0); // 用黑色清空屏幕
+  glShadeModel(GL_FLAT);  // 设置着色模型，GL_FLAT为单调着色模式，默认为GL_SMOOTH平滑着色
+  glEnable(GL_DEPTH_TEST); // 打开深度测试，即显示图像时有不同深度的物体的遮挡效果，默认为后显示的遮挡先显示的</p>
+
+<p>  quadratic = gluNewQuadric(); // 新建一个二次对象，用来画圆柱体
+  gluQuadricNormals(quadratic, GLU_SMOOTH); // 指定二次对象的法向量类型
+  gluQuadricTexture(quadratic, GL_TRUE); // 打开纹理显示</p>
+
+<p>  lastClock = clock(); // 记录当前的clock，用于计算FPS</p></li>
+</ul>
+
+
+<p>}
+```</p>
+
+<ul>
+<li><p>调用<code>glutDisplayFunc</code>设置显示响应函数<code>display</code>，这个稍后叙述。</p></li>
+<li><p>调用<code>glutReshapeFunc</code>设置在窗口大小改变时的响应函数<code>reshape</code></p></li>
+</ul>
+
+
+<p>```cpp
+void reshape(int w, int h) {</p>
+
+<pre><code>scrw = w; // 全局变量，记录当前的屏幕宽度
+scrh = h; // 全局变量，记录当前的屏幕高度
+glViewport(0, 0, (GLsizei) w, (GLsizei) h); // 设置显示区域大小
+glMatrixMode(GL_PROJECTION); // 把「投影矩阵」设置为当前矩阵
+glLoadIdentity(); // 把矩阵设成单位矩阵
+gluPerspective(60.0, (GLfloat) w / (GLfloat) h, 1.0, 1000.0); // 设置Perspective
+glMatrixMode(GL_MODELVIEW); // 把「模型视景矩阵」设置为当前矩阵
+glLoadIdentity(); // 把矩阵设成单位矩阵
+gluLookAt(lookatx, lookaty, lookatz, centerX, 0, centerZ, 0.0, 1.0, 0.0); // 改变视角
+</code></pre>
+
+<p>}
+```</p>
+
+<ul>
+<li><p>调用<code>glutKeyboardFunc</code>设置键盘按键响应函数<code>keyboard</code>
+```cpp
+void keyboard(unsigned char key, int x, int y) {
+  switch (key) {</p>
+
+<pre><code>  // 此处vangle为人的速度方向与x轴负方向的夹角
+  case 'a':
+      vangle = (vangle + 1) % 360;
+      break;
+  case 'd':
+      vangle = (vangle - 1) % 360;
+      break;
+  case 27:
+      exit(0);
+  case 's':
+      vangle = (vangle + 180) % 360;
+      break;
+  default:
+      break;
+</code></pre>
+
+<p>  }
+}
+```</p></li>
+<li><p>调用<code>glutPassiveMotionFunc</code>设置鼠标在界面上移动时的响应函数<code>passiveMotionFunc</code>
+```cpp
+void passiveMotionFunc(int x, int y) {
+  // 把视角限定在以人的胯部（坐标原点）为中心的半径为5.0的球面上
+  lookatx = -5.0 + (double) x / scrw * 10.0;
+  lookatz = sqrt(25 - lookatx * lookatx) + centerZ;
+  lookatx += centerX;
+  double tmpy = -5.0 + (double) y / scrh * 10.0;
+  // 不可以低于地面
+  if (tmpy >= -GLOBAL_SIZE * LEG_XSCALE * 2)</p>
+
+<pre><code>  lookaty = tmpy;
+</code></pre>
+
+<p>  glLoadIdentity();</p>
+
+<p>  gluLookAt(lookatx, lookaty, lookatz, centerX, 0, centerZ, 0.0, 1.0, 0.0);
+}
+```</p></li>
+<li><p>调用<code>calculateData</code>计算数据并显示，稍后叙述</p></li>
+<li><p>最后调用<code>glutMainLoop</code>进入OpenGL事件循环，窗口开始显示动画，开始接受鼠标、键盘输入事件</p></li>
+</ul>
+
+
+<h2>定义的全局变量</h2>
+
+<p>其中的赋值为其初值
+```cpp
+static int leftHigherLegAngle = -60, rightHigherLegAngle = -120; // 大腿
+static int leftLowerLegAngle = 0, rightLowerLegAngle = 0; // 小腿
+static int leftHigherHandAngle = -120, rightHigherHandAngle = -60; // 手臂上半部
+static int leftLowerHandAngle = -60, rightLowerHandAngle = 0; // 手臂下半部
+static int leftFootAngle = 0, rightFootAngle = 0; // 脚掌</p>
+
+<p>static GLfloat centerX = 0.0, centerY = 0.0, centerZ = 0.0; // 胯部坐标（人的中心）
+static GLint vangle = 0; // 人的前进速度方向与x轴负方向的夹角</p>
+
+<p>static clock_t lastClock; // 记录的clock，用于计算FPS
+```</p>
+
+<h2>calculateData函数，计算关节角度</h2>
+
+<p>```cpp
+void calculateData(int id) {</p>
+
+<pre><code>// 使人的胯部离地面的距离随着动作的改变而改变
+centerY = legLength * sin(-leftHigherLegAngle / 180.0 * PI) - legLength;
+// 为了简化计算，我粗略假定大腿每动1度，人会朝着其方向前进0.035个单位长度
+double mvx = cos(vangle / 180.0 * PI) * 0.035; // 计算x轴方向移动的距离
+double mvz = sin(vangle / 180.0 * PI) * 0.035; // 计算z轴方向移动的距离
+
+// dir1为全局变量，为true时右脚向前，为false时左脚向前
+if (!dir1) {
+    leftHigherLegAngle --;  // 左脚向前运动
+    rightHigherLegAngle ++; // 右脚向后运动
+    if (leftHigherLegAngle &gt;= -75) {
+        // 若左腿的角度已经大于-75，那么左脚小腿向上翘起
+        leftLowerLegAngle += 6;
+        leftFootAngle = 0;
+    }
+    // 若左脚角度小于-105，那么左腿小腿向前踢
+    else if (leftHigherLegAngle &lt; -105) leftLowerLegAngle -= 6;
+
+    // 若已经达到-120度（大腿的运动范围为[-120, -60]
+    if (leftHigherLegAngle == -120) {
+        dir1 = true;
+    }
+
+    // 此时右脚着地，计算右脚脚掌的角度，始终贴着地面
+    rightFootAngle = -rightHigherLegAngle - 90;
+
+    // 手部简单地匀速运动，运动范围为60度
+    leftHigherHandAngle ++;
+    leftLowerHandAngle ++;
+    rightHigherHandAngle --;
+    rightLowerHandAngle --;
+}
+else {
+    leftHigherLegAngle ++;
+    rightHigherLegAngle --;
+    if (rightHigherLegAngle &gt;= -75) {
+        rightLowerLegAngle += 6;
+        rightFootAngle = 0;
+    }
+    else if (rightHigherLegAngle &lt; -105) rightLowerLegAngle -= 6;
+
+    if (leftHigherLegAngle == -60) dir1 = false;
+
+    leftFootAngle = -leftHigherLegAngle - 90;
+
+    leftHigherHandAngle --;
+    leftLowerHandAngle --;
+    rightHigherHandAngle ++;
+    rightLowerHandAngle ++;
+}
+
+// 人移动
+centerX -= mvx;
+lookatx -= mvx;
+centerZ += mvz;
+lookatz += mvz;
+
+// 调整视角，始终把屏幕中心对准人的中心
+glLoadIdentity();
+gluLookAt(lookatx, lookaty, lookatz, centerX, 0, centerZ, 0.0, 1.0, 0.0);
+
+// 刷新屏幕
+glutPostRedisplay();
+// 设置定时器函数，1毫秒后再重新调用calculateData
+glutTimerFunc(1, calculateData, 0);
+</code></pre>
+
+<p>}
+```</p>
+
+<h2>宏定义的常量</h2>
+
+<p>```cpp</p>
+
+<h1>define GLOBAL_SIZE 0.5             // 全局缩放比例</h1>
+
+<p>// 绘制脚部长方体所需的坐标系缩放比例</p>
+
+<h1>define LEG_XSCALE 2.0</h1>
+
+<h1>define LEG_YSCALE 0.4</h1>
+
+<h1>define LEG_ZSCALE 0.4</h1>
+
+<p>// 身体的长方体</p>
+
+<h1>define BODY_XSCALE 0.5</h1>
+
+<h1>define BODY_YSCALE LEG_XSCALE * 1.2</h1>
+
+<h1>define BODY_ZSCALE 1.5</h1>
+
+<p>// 头部的半径为身体的厚度</p>
+
+<h1>define HEAD_RADIUS GLOBAL_SIZE * BODY_XSCALE</h1>
+
+<p>// 手臂的长方体</p>
+
+<h1>define HAND_XSCALE 1.6</h1>
+
+<h1>define HAND_YSCALE LEG_YSCALE</h1>
+
+<h1>define HAND_ZSCALE LEG_ZSCALE</h1>
+
+<p>// 脚掌的长方体</p>
+
+<h1>define FOOT_XSCALE 1.0</h1>
+
+<h1>define FOOT_YSCALE 0.3</h1>
+
+<h1>define FOOT_ZSCALE LEG_ZSCALE</h1>
+
+<p>```</p>
+
+<h2>display函数，画出虚拟人模型</h2>
+
+<p>这个函数是根据<code>calculateData</code>函数计算出的值来重画整个屏幕。Talk is less.
+这里面的<code>glPushMatrix</code>函数可能用得不好，有些冗余，原因是我在做这个作业的时候代码是一点点增加的，先是只有一只脚，然后两只脚，然后加个身……
+```cpp
+void display(void) {</p>
+
+<pre><code>calFPS(); // 计算FPS
+
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // 清空颜色缓冲和深度缓冲
+
+glColor3f(0.8, 0.8, 0.8); // 设置颜色为深灰色
+// 画地面，以当前人的位置，前后纵横各画30条线段，整个平面为正方形
+int minx = (int) centerX - 30;
+int maxx = (int) centerX + 30;
+int minz = (int) centerZ - 30;
+int maxz = (int) centerZ + 30;
+// 画竖线
+for (int x = minx; x &lt;= maxx; ++ x) {
+    glBegin(GL_LINES);
+        glVertex3f(x, -GLOBAL_SIZE * LEG_XSCALE * 2 - GLOBAL_SIZE * FOOT_YSCALE, minz);
+        glVertex3f(x, -GLOBAL_SIZE * LEG_XSCALE * 2 - GLOBAL_SIZE * FOOT_YSCALE, maxz);
+    glEnd();
+}
+// 画横线
+for (int z = minz; z &lt;= maxz; ++ z) {
+    glBegin(GL_LINES);
+        glVertex3f(minx, -GLOBAL_SIZE * LEG_XSCALE * 2 - GLOBAL_SIZE * FOOT_YSCALE, z);
+        glVertex3f(maxx, -GLOBAL_SIZE * LEG_XSCALE * 2 - GLOBAL_SIZE * FOOT_YSCALE, z);
+    glEnd();
+}
+
+glPushMatrix();
+    glTranslatef(centerX, centerY, centerZ); // 把坐标系原点移到当前人的中心所在位置
+    glRotatef(vangle, 0.0, 1.0, 0.0); // 旋转vangle角度，使人对着其前进方向
+
+    glColor3f(0.5, 0.5, 0.5); // 设置颜色为灰色
+    // 画左脚
+    glPushMatrix();
+        glRotatef((GLfloat) leftHigherLegAngle, 0.0, 0.0, 1.0);
+        glTranslatef(GLOBAL_SIZE * LEG_XSCALE / 2, 0.0, GLOBAL_SIZE * LEG_ZSCALE);
+        glPushMatrix();
+            glScalef(LEG_XSCALE, LEG_YSCALE, LEG_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+        glTranslatef(GLOBAL_SIZE * LEG_XSCALE / 2, 0.0, 0.0);
+        // 画关节
+        glPushMatrix();
+            glTranslatef(0.0, 0.0, -GLOBAL_SIZE * LEG_ZSCALE / 2);
+            gluCylinder(quadratic, GLOBAL_SIZE * LEG_YSCALE / 2, 
+                  GLOBAL_SIZE * LEG_YSCALE / 2, GLOBAL_SIZE * LEG_ZSCALE, 32, 32);
+            glTranslatef(0.0, 0.0, GLOBAL_SIZE * LEG_ZSCALE);
+            drawSolidCircle(0.0, 0.0, GLOBAL_SIZE * LEG_YSCALE / 2);
+            glTranslatef(0.0, 0.0, -GLOBAL_SIZE * LEG_ZSCALE);
+            drawSolidCircle(0.0, 0.0, GLOBAL_SIZE * LEG_YSCALE / 2);
+        glPopMatrix();
+        glRotatef((GLfloat) leftLowerLegAngle, 0.0, 0.0, 1.0);
+        glTranslatef(GLOBAL_SIZE * LEG_XSCALE / 2, 0.0, 0.0);
+        glPushMatrix();
+            glScalef(LEG_XSCALE, LEG_YSCALE, LEG_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+        // 画脚掌
+        glTranslatef(GLOBAL_SIZE * LEG_XSCALE / 2, 0.0, 0.0);
+        glRotatef(90.0, 0.0, 0.0, 1.0);
+        glTranslatef(-GLOBAL_SIZE * FOOT_XSCALE / 2 + GLOBAL_SIZE * LEG_YSCALE / 2, 0.0, 0.0);
+        glRotatef((GLfloat) leftFootAngle, 0.0, 0.0, 1.0);
+        glPushMatrix();
+            glScalef(FOOT_XSCALE, FOOT_YSCALE, FOOT_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+    glPopMatrix();
+
+    // 同理画右脚
+    glPushMatrix();
+        glRotatef((GLfloat) rightHigherLegAngle, 0.0, 0.0, 1.0);
+        glTranslatef(GLOBAL_SIZE * LEG_XSCALE / 2, 0.0, -GLOBAL_SIZE * LEG_ZSCALE);
+        glPushMatrix();
+            glScalef(LEG_XSCALE, LEG_YSCALE, LEG_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+        glTranslatef(GLOBAL_SIZE * LEG_XSCALE / 2, 0.0, 0.0);
+        // 关节
+        glPushMatrix();
+            glTranslatef(0.0, 0.0, -GLOBAL_SIZE * LEG_ZSCALE / 2);
+            gluCylinder(quadratic, GLOBAL_SIZE * LEG_YSCALE / 2, 
+                  GLOBAL_SIZE * LEG_YSCALE / 2, GLOBAL_SIZE * LEG_ZSCALE, 32, 32);
+            glTranslatef(0.0, 0.0, GLOBAL_SIZE * LEG_ZSCALE);
+            drawSolidCircle(0.0, 0.0, GLOBAL_SIZE * LEG_YSCALE / 2);
+            glTranslatef(0.0, 0.0, -GLOBAL_SIZE * LEG_ZSCALE);
+            drawSolidCircle(0.0, 0.0, GLOBAL_SIZE * LEG_YSCALE / 2);
+        glPopMatrix();
+        glRotatef((GLfloat) rightLowerLegAngle, 0.0, 0.0, 1.0);
+        glTranslatef(GLOBAL_SIZE * LEG_XSCALE / 2, 0.0, 0.0);
+        glPushMatrix();
+            glScalef(LEG_XSCALE, LEG_YSCALE, LEG_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+        // 脚掌
+        glTranslatef(GLOBAL_SIZE * LEG_XSCALE / 2, 0.0, 0.0);
+        glRotatef(90.0, 0.0, 0.0, 1.0);
+        glTranslatef(-GLOBAL_SIZE * FOOT_XSCALE / 2 + GLOBAL_SIZE * LEG_YSCALE / 2, 0.0, 0.0);
+        glRotatef((GLfloat) rightFootAngle, 0.0, 0.0, 1.0);
+        glPushMatrix();
+            glScalef(FOOT_XSCALE, FOOT_YSCALE, FOOT_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+    glPopMatrix();
+
+    // 身体
+    glColor3f(1.0, 1.0, 1.0); // 头和身颜色为白色
+    glPushMatrix();
+        glTranslatef(0, GLOBAL_SIZE * BODY_YSCALE / 2, 0.0);
+        glScalef(BODY_XSCALE, BODY_YSCALE, BODY_ZSCALE);
+        glutSolidCube(GLOBAL_SIZE);
+    glPopMatrix();
+
+    // 头部
+    glPushMatrix();
+        glTranslatef(0, GLOBAL_SIZE * BODY_YSCALE + HEAD_RADIUS, 0.0);
+        glutSolidSphere(HEAD_RADIUS, 10, 8);
+    glPopMatrix();
+
+    // 左手
+    glColor3f(0.5, 0.5, 0.5); // 颜色为灰色
+    glPushMatrix();
+        glTranslatef(0, GLOBAL_SIZE * BODY_YSCALE, 0.0);
+        glRotatef((GLfloat) leftHigherHandAngle, 0.0, 0.0, 1.0);
+        glTranslatef(GLOBAL_SIZE * HAND_XSCALE / 2, 0.0, 
+              GLOBAL_SIZE * (BODY_ZSCALE + HAND_ZSCALE) / 2);
+        glPushMatrix();
+            glScalef(HAND_XSCALE, HAND_YSCALE, HAND_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+        glTranslatef(GLOBAL_SIZE * HAND_XSCALE / 2, 0.0, 0.0);
+        // 关节
+        glPushMatrix();
+            glTranslatef(0.0, 0.0, -GLOBAL_SIZE * HAND_ZSCALE / 2);
+            gluCylinder(quadratic, GLOBAL_SIZE * HAND_YSCALE / 2, 
+                  GLOBAL_SIZE * HAND_YSCALE / 2, GLOBAL_SIZE * HAND_ZSCALE, 32, 32);
+            glTranslatef(0.0, 0.0, GLOBAL_SIZE * HAND_ZSCALE);
+            drawSolidCircle(0.0, 0.0, GLOBAL_SIZE * HAND_YSCALE / 2);
+            glTranslatef(0.0, 0.0, -GLOBAL_SIZE * HAND_ZSCALE);
+            drawSolidCircle(0.0, 0.0, GLOBAL_SIZE * HAND_YSCALE / 2);
+        glPopMatrix();
+
+        glRotatef((GLfloat) leftLowerHandAngle, 0.0, 0.0, 1.0);
+        glTranslatef(GLOBAL_SIZE * HAND_XSCALE / 2, 0.0, 0.0);
+        glPushMatrix();
+            glScalef(HAND_XSCALE, HAND_YSCALE, HAND_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+    glPopMatrix();
+
+    // 同理画右手
+    glPushMatrix();
+        glTranslatef(0, GLOBAL_SIZE * BODY_YSCALE, 0.0);
+        glRotatef((GLfloat) rightHigherHandAngle, 0.0, 0.0, 1.0);
+        glTranslatef(GLOBAL_SIZE * HAND_XSCALE / 2, 0.0, 
+               -GLOBAL_SIZE * (BODY_ZSCALE + HAND_ZSCALE) / 2);
+        glPushMatrix();
+            glScalef(HAND_XSCALE, HAND_YSCALE, HAND_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+        glTranslatef(GLOBAL_SIZE * HAND_XSCALE / 2, 0.0, 0.0);
+        // Joint
+        glPushMatrix();
+            glTranslatef(0.0, 0.0, -GLOBAL_SIZE * HAND_ZSCALE / 2);
+            gluCylinder(quadratic, GLOBAL_SIZE * HAND_YSCALE / 2, 
+                  GLOBAL_SIZE * HAND_YSCALE / 2, GLOBAL_SIZE * HAND_ZSCALE, 32, 32);
+            glTranslatef(0.0, 0.0, GLOBAL_SIZE * HAND_ZSCALE);
+            drawSolidCircle(0.0, 0.0, GLOBAL_SIZE * HAND_YSCALE / 2);
+            glTranslatef(0.0, 0.0, -GLOBAL_SIZE * HAND_ZSCALE);
+            drawSolidCircle(0.0, 0.0, GLOBAL_SIZE * HAND_YSCALE / 2);
+        glPopMatrix();
+
+        glRotatef((GLfloat) rightLowerHandAngle, 0.0, 0.0, 1.0);
+        glTranslatef(GLOBAL_SIZE * HAND_XSCALE / 2, 0.0, 0.0);
+        glPushMatrix();
+            glScalef(HAND_XSCALE, HAND_YSCALE, HAND_ZSCALE);
+            glutSolidCube(GLOBAL_SIZE);
+        glPopMatrix();
+    glPopMatrix();
+glPopMatrix();
+
+glFlush(); // 让OpenGL立即显示
+glutSwapBuffers(); // 切换到另一个缓冲区（打开了GLUT_DOUBLE的所谓双缓冲）
+</code></pre>
+
+<p>}
+```</p>
+
+<h1>成果</h1>
+
+<h1>小结</h1>
+
+<p>这次实验是所谓的「一个星期学会OpenGL」，事实证明没有东西是不可能的，只要你想做！</p>
+
+<p>而这次的制作虚拟人走动确实挺有趣的，比以前的项目做的那些无聊的东西好多了哈。</p>
+]]></content>
+  </entry>
+  
+</feed>
