@@ -1,0 +1,596 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Qt | 木頭人 - 宇騰]]></title>
+  <link href="http://zonyitoo.github.com/blog/categories/qt/atom.xml" rel="self"/>
+  <link href="http://zonyitoo.github.com/"/>
+  <updated>2013-01-22T17:50:16+08:00</updated>
+  <id>http://zonyitoo.github.com/</id>
+  <author>
+    <name><![CDATA[Yutang Chung]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[DoubanFM播放器开发手记]]></title>
+    <link href="http://zonyitoo.github.com/blog/2013/01/22/doubanfmbo-fang-qi-kai-fa-shou-ji/"/>
+    <updated>2013-01-22T15:31:00+08:00</updated>
+    <id>http://zonyitoo.github.com/blog/2013/01/22/doubanfmbo-fang-qi-kai-fa-shou-ji</id>
+    <content type="html"><![CDATA[<h1>前言</h1>
+
+<p>因为个人比较喜欢边听音乐边工作，DoubanFM是我的首选，没有为什么，只是因为喜欢而已。但是对于Linuxer来说，DoubanFM缺乏一个好的播放器，网页版用着不爽（Flash的），Chrome插件版又不能登录，Adobe Air版开着风扇转得厉害。在网上找了一下发布也有不少人写了客户端，像<a href="https://github.com/zhendi/DoubanFM-CLI">DoubanFM-CLI</a>等等各种各样的客户端，但感觉用得不太顺手，就萌生了自己写一个客户端的念头。</p>
+
+<h1>DoubanFM API</h1>
+
+<p>豆瓣有发布<a href="http://developer.douban.com/">开放的API</a>，可惜这之中并不包括DoubanFM的API，只能通过抓包来分析了。网上也有很多类似的分析文章，一般都选择这个地址<code>http://douban.fm/j/mine/playlist</code>来作为API接口，这是网页版播放端使用的接口，其实豆瓣出了个新的地址<code>http://www.douban.com/j/app/radio</code>。以下分析都基于新的地址。</p>
+
+<h2>频道（Channels）</h2>
+
+<p>使用GET方法对<code>http://www.douban.com/j/app/radio/channels</code>发起请求，将返回一个JSON，结构如下</p>
+
+<p>```python
+{</p>
+
+<pre><code>"channels": [
+    {
+        "name": "私人兆赫",
+        "seq_id": 0,
+        "abbr_en": "My",
+        "channel_id": 0,
+        "name_en": "Personal Radio"
+    },
+    ...
+]
+</code></pre>
+
+<p>}
+```</p>
+
+<h2>歌曲列表及其它功能</h2>
+
+<p>使用GET方法对<code>http://www.douban.com/j/app/radio/people</code>发起请求，其中可包含以下参数，采用URL Encode方法发送</p>
+
+<table width="100%">
+   <tr>
+      <td>参数名</td>
+      <td>是否必选</td>
+      <td>参数类型</td>
+      <td>值</td>
+   </tr>
+   <tr>
+      <td>app_name</td>
+      <td>必选</td>
+      <td>string</td>
+      <td>radio_desktop_win</td>
+   </tr>
+   <tr>
+      <td>version</td>
+      <td>必选</td>
+      <td>int</td>
+      <td>100</td>
+   </tr>
+   <tr>
+      <td>user_id</td>
+      <td>非必选</td>
+      <td>string</td>
+      <td>user_id</td>
+   </tr>
+   <tr>
+      <td>expire</td>
+      <td>非必选</td>
+      <td>int</td>
+      <td>expire</td>
+   </tr>
+   <tr>
+      <td>token</td>
+      <td>非必选</td>
+      <td>string</td>
+      <td>token</td>
+   </tr>
+   <tr>
+      <td>sid</td>
+      <td>非必选</td>
+      <td>int</td>
+      <td>song id</td>
+   </tr>
+   <tr>
+      <td>h</td>
+      <td>非必选</td>
+      <td>string</td>
+      <td>最近播放列表</td>
+   </tr>
+   <tr>
+      <td>channel</td>
+      <td>非必选</td>
+      <td>int</td>
+      <td>频道id</td>
+   </tr>
+   <tr>
+      <td>type</td>
+      <td>必选</td>
+      <td>string</td>
+      <td>报告类型</td>
+   </tr>
+</table>
+
+
+<ul>
+<li><code>app_name</code> 是固定值<code>radio_desktop_win</code></li>
+<li><code>version</code> 是固定值<code>100</code></li>
+<li><code>user_id</code> 非必选，若有则必须与<code>expire</code>和<code>token</code>搭配使用</li>
+<li><code>expire</code> token过期时间msec</li>
+<li><code>token</code> 登录令牌</li>
+<li><code>sid</code> 歌曲的id</li>
+<li><code>h</code> 最近播放的音乐，格式为<code>|song.sid:报告类型</code>，如<code>|1386894:s|444482:p|460268:s|48180:s|1027376:s|188257:s</code></li>
+<li><code>channel</code> 频道id</li>
+<li><code>type</code> 报告类型是一个字符，包括以下类型</li>
+</ul>
+
+
+<table width="100%">
+   <tr>
+      <td>类型</td>
+      <td>需要参数</td>
+      <td>含义</td>
+      <td>报告长度</td>
+   </tr>
+   <tr>
+      <td>b</td>
+      <td>sid</td>
+      <td>bye，不再播放</td>
+      <td>短报告</td>
+   </tr>
+   <tr>
+      <td>e</td>
+      <td>sid</td>
+      <td>end，当前歌曲播放完毕，但是歌曲队列中还有歌曲</td>
+      <td>短报告</td>
+   </tr>
+   <tr>
+      <td>n</td>
+      <td></td>
+      <td>new，没有歌曲播放，歌曲队列也没有任何歌曲，需要返回新播放列表</td>
+      <td>长报告</td>
+   </tr>
+   <tr>
+      <td>p</td>
+      <td></td>
+      <td>playing，歌曲正在播放，队列中还有歌曲，需要返回新的播放列表</td>
+   </tr>
+   <tr>
+      <td>s</td>
+      <td>sid</td>
+      <td>skip，歌曲正在播放，队列中还有歌曲，适用于用户点击下一首</td>
+      <td>短报告</td>
+   </tr>
+   <tr>
+      <td>r</td>
+      <td>sid</td>
+      <td>rate，歌曲正在播放，标记喜欢当前歌曲</td>
+      <td>短报告</td>
+   </tr>
+   <tr>
+      <td>s</td>
+      <td>sid</td>
+      <td>skip，歌曲正在播放，队列中还有歌曲，适用于用户点击下一首</td>
+      <td>短报告</td>
+   </tr>
+   <tr>
+      <td>u</td>
+      <td>sid</td>
+      <td>unrate，歌曲正在播放，标记取消喜欢当前歌曲</td>
+      <td>短报告</td>
+   </tr>
+</table>
+
+
+<p>其中，<code>p</code>报告可以附上<code>h</code>参数，表示最近播完的歌的信息。</p>
+
+<h3>获取新播放列表的返回信息</h3>
+
+<p>```python
+{</p>
+
+<pre><code>"r": 0,
+"version_max": 100,
+"song": [
+    {
+        "album": "/subject/2266925/",
+        "picture": "http://img3.douban.com/mpic/s2891182.jpg",
+        "ssid": "3853",
+        "artist": "李宗盛 / 梁静茹",
+        "url": "http://mr3.douban.com/201301221627/ca5607811b5ad84a5b66990f19135dbd/view/song/small/p425687.mp3",
+        "company": "滚石",
+        "title": "问",
+        "rating_avg": 4.76596,
+        "length": 207,
+        "subtype": "",
+        "public_time": "2007",
+        "sid": "425687",
+        "aid": "2266925",
+        "kbps": "64",
+        "albumtitle": "理性与感性作品音乐会",
+        "like": 0
+    },
+    ...
+]
+</code></pre>
+
+<p>}
+```</p>
+
+<ul>
+<li><code>r</code> 错误判断，若为0则表示请求正确，若为1则表示出错，JSON中的<code>err</code>字段表示错误信息</li>
+<li><code>version_max</code> 固定值100</li>
+<li><code>song</code> 歌曲列表
+
+<ul>
+<li><code>album</code> 专辑跳转地址</li>
+<li><code>picture</code> 专辑图片地址</li>
+<li><code>ssid</code> 未知</li>
+<li><code>artist</code> 艺术家</li>
+<li><code>url</code> 歌曲的URL</li>
+<li><code>company</code> 唱片公司</li>
+<li><code>title</code> 歌曲名</li>
+<li><code>rating_avg</code> 平均分数</li>
+<li><code>length</code> 长度</li>
+<li><code>subtype</code> 子类型（有些广告的字类型会是T）</li>
+<li><code>public_time</code> 出版年份</li>
+<li><code>sid</code> 歌曲id</li>
+<li><code>aid</code> 专辑id</li>
+<li><code>kbps</code> 码率</li>
+<li><code>albumtitle</code> 专辑名</li>
+<li><code>like</code> 是否已喜欢，0为false，1为true</li>
+</ul>
+</li>
+</ul>
+
+
+<h2>用户登录</h2>
+
+<p>使用POST方法向<code>http://www.douban.com/j/app/login</code>发送数据，参数为</p>
+
+<table width="100%">
+   <tr>
+      <td>参数名</td>
+      <td>是否必选</td>
+      <td>参数类型</td>
+      <td>值</td>
+   </tr>
+   <tr>
+      <td>app_name</td>
+      <td>必选</td>
+      <td>string</td>
+      <td>radio_dsktop_win</td>
+   </tr>  
+   <tr>
+      <td>version</td>
+      <td>必选</td>
+      <td>int</td>
+      <td>100</td>
+   </tr>
+   <tr>
+      <td>email</td>
+      <td>必选</td>
+      <td>string</td>
+      <td>用户登录的邮箱名</td>
+   </tr>
+   <tr>
+      <td>password</td>
+      <td>必选</td>
+      <td>string</td>
+      <td>用户密码</td>
+   </tr>
+</table>
+
+
+<p>返回的数据是JSON格式</p>
+
+<p>```python
+{</p>
+
+<pre><code>"user_id": "48071607",
+"err": "ok",
+"token": "50b196a088",
+"expire": "1374395894",
+"r": 0,
+"user_name": "钟小腾",
+"email": "[隐藏隐藏]"
+</code></pre>
+
+<p>}
+```</p>
+
+<p>若登录出错，<code>r</code>会为1，<code>err</code>会包含错误信息。</p>
+
+<h2>DoubanFM Qt版</h2>
+
+<p>平时写GUI软件为了方便都使用Python来编写，这次为了不让自己太懒，决定使用C++编写！</p>
+
+<p>项目地址：<a href="https://gitcafe.com/zonyitoo/doubanfm-qt/tree/master">https://gitcafe.com/zonyitoo/doubanfm-qt/tree/master</a></p>
+
+<p>使用的库：</p>
+
+<ul>
+<li>libphonon 这是个第三方播放器库，可以播音乐视频</li>
+<li>libqjson JSON解析库</li>
+</ul>
+
+
+<p>在设计时并没有过多考虑封装，导致在后来写着写着就要把架构推倒重来，就当作是一个无聊的学习过程吧。</p>
+
+<h3>Douban类</h3>
+
+<p>这是一个对于要用到的功能的封装类</p>
+
+<p>```cpp
+class Douban : public QObject
+{</p>
+
+<pre><code>Q_OBJECT
+</code></pre>
+
+<p>public:</p>
+
+<pre><code>~Douban();
+static Douban* getInstance(const DoubanUser&amp; user = DoubanUser());
+
+void userLogin();
+void doLogin(const QString &amp;email, const QString &amp;password);
+void userLogout();
+void userReLogin();
+
+void setLoginDialog(DoubanLoginDialog *dialog);
+
+void getNewPlayList(const quint32&amp; channel);
+void getPlayingList(const quint32&amp; channel, const quint32&amp; sid);
+void rateSong(const quint32&amp; sid, const quint32&amp; channel, const bool toRate);
+void unrateSong(const quint32&amp; sid, const quint32&amp; channel);
+void skipSong(const quint32&amp; sid, const quint32&amp; channel);
+void songEnd(const quint32&amp; sid, const quint32&amp; channel);
+void byeSong(const quint32&amp; sid, const quint32&amp; channel);
+
+void getChannels();
+
+void setUser(const DoubanUser&amp; user);
+DoubanUser getUser();
+bool hasLogin();
+</code></pre>
+
+<p>signals:</p>
+
+<pre><code>void receivedNewList(const QList&lt;DoubanFMSong&gt;&amp; songs);
+void receivedPlayingList(const QList&lt;DoubanFMSong&gt;&amp; songs);
+void receivedRateSong(const bool succeed);
+void receivedSkipSong(const bool succeed);
+void receivedCurrentEnd(const bool succeed);
+void receivedByeSong(const bool succeed);
+void receivedChannels(const QList&lt;DoubanChannel&gt;&amp; channels);
+void loginSucceed(DoubanUser *user);
+void logoffSucceed();
+</code></pre>
+
+<p>private slots:</p>
+
+<pre><code>void onReceivedAuth(QNetworkReply *reply);
+void onReceivedRelogin(QNetworkReply *reply);
+void onReceivedNewList(QNetworkReply *reply);
+void onReceivedPlayingList(QNetworkReply *reply);
+void onReceivedRateSong(QNetworkReply *reply);
+void onReceivedSkipSong(QNetworkReply *reply);
+void onReceivedCurrentEnd(QNetworkReply *reply);
+void onReceivedByeSong(QNetworkReply *reply);
+void onReceivedChannels(QNetworkReply *reply);
+
+void onLoginSucceed(DoubanUser user);
+</code></pre>
+
+<p>private:</p>
+
+<pre><code>explicit Douban(QObject *parent = 0);
+/**
+ * @brief _managers
+ *
+ * 0: User login/logout
+ * 1: new list
+ * 2: rate song/unrate song
+ * 3: skip song
+ * 4: current end
+ * 5: bye song
+ * 6: get channels
+ * 7: playing list
+ */
+QNetworkAccessManager *_managers[8];
+
+DoubanUser _user;
+
+DoubanLoginDialog *loginDialog;
+</code></pre>
+
+<p>};
+```</p>
+
+<p>由函数名看应试大概能看出函数的意义了，这里不过多说明。看到下面的私有成员时应该会很疑惑，为什么会有8个<code>QNetworkAccessManager</code>的指针？</p>
+
+<p>其实是这样的，<code>QNetworkAccessManager</code>这个东西默认带有异步接口，在使用时需要接收它的一个<code>finished(QNetworkReply*)</code>的信号来处理返回数据。这样问题就来了，如果只用一个<code>QNetworkAccessManager</code>的话，我怎么区分对于不同请求的返回数据呢？我没有在<code>QNetworkReply</code>这个类里面找到其它什么可以区分的参数。因此，在使用时就为各种请求都分别建立了一个<code>QNetworkAccessManager</code>的实例，那么它们的返回值就不会互相干扰了。</p>
+
+<p>这个Douban类默认是不能调用构造函数的，只能通过<code>getInstance()</code>来获得一个实例，单例的设计模式。</p>
+
+<h3>Phonon库的使用</h3>
+
+<p>在主界面中，使用了Phonon库来播放歌曲。其实使用方法也很简单，<code>MediaObject</code>实例用于播放视频或歌曲，<code>AudioOutput</code>实例用来发声，<code>SeekSlider</code>用来作为拖动进度条，<code>VolumeSlider</code>就是调声音的。说说在使用时遇到的小问题吧</p>
+
+<ul>
+<li>必须调用<code>Phonon::createPath(MediaNode*, MediaNode*)</code>来把<code>MediaObject</code>与<code>AudioOutput</code>连接起来，不然没有声音</li>
+</ul>
+
+
+<h3>使用XML来保存数据</h3>
+
+<p>保存所使用的XML结构</p>
+
+<p>```xml
+&lt;?xml version="1.0" encoding="UTF-8"?>
+<DoubanFM version="1.0"></p>
+
+<pre><code>&lt;volume&gt;1&lt;/volume&gt;
+&lt;channel&gt;2&lt;/channel&gt;
+&lt;user user_id=""&gt;
+    &lt;expire&gt;&lt;/expire&gt;
+    &lt;token&gt;&lt;/token&gt;
+    &lt;user_name&gt;&lt;/user_name&gt;
+    &lt;email&gt;&lt;/email&gt;
+    &lt;password&gt;&lt;/password&gt;
+&lt;/user&gt;
+</code></pre>
+
+<p></DoubanFM>
+```</p>
+
+<p>使用<code>QtXML</code>来读取数据，这是在<code>MainWindow</code>中调用的函数<code>loadBackupData()</code></p>
+
+<p>```cpp
+void MainWindow::loadBackupData(const QString&amp; filename) {</p>
+
+<pre><code>QDomDocument doc;
+QFile file(filename);
+if (!file.open(QIODevice::ReadWrite)) return;
+if (doc.setContent(&amp;file)) {
+    QDomElement config = doc.documentElement();
+    if (config.attribute("version") != VERSION) {
+        file.remove();
+        return;
+    }
+    QDomNodeList list = config.childNodes();
+    for (int i = 0; i &lt; list.size(); ++ i) {
+        if (list.at(i).nodeName() == "channel") {
+            bool ok;
+            _channel = list.at(i).toElement().text().toInt(&amp;ok, 10);
+            if (!ok) _channel = 0;
+            qDebug() &lt;&lt; Q_FUNC_INFO &lt;&lt; "Loaded last channel =" &lt;&lt; _channel;
+        }
+        else if (list.at(i).nodeName() == "volume") {
+            bool ok;
+            audioOutput-&gt;setVolume(list.at(i).toElement().text().toDouble(&amp;ok));
+            if (!ok) audioOutput-&gt;setVolume(0.5);
+            qDebug() &lt;&lt; Q_FUNC_INFO &lt;&lt; "Loaded last volume =" &lt;&lt; audioOutput-&gt;volume();
+        }
+        else if (list.at(i).nodeName() == "user") {
+            QDomElement user = list.at(i).toElement();
+            QString user_id = user.attribute("user_id");
+
+            QString token, email, password;
+            QString user_name, expire;
+
+            QDomNodeList lista = user.childNodes();
+            for (int j = 0; j &lt; lista.size(); ++ j) {
+                QDomNode node = lista.at(j);
+                if (node.nodeName() == "expire") {
+                    expire = node.toElement().text();
+                }
+                else if (node.nodeName() == "token") {
+                    token = node.toElement().text();
+                }
+                else if (node.nodeName() == "user_name") {
+                    user_name = node.toElement().text();
+                }
+                else if (node.nodeName() == "email") {
+                    email = node.toElement().text();
+                }
+                else if (node.nodeName() == "password") {
+                    password = node.toElement().text();
+                }
+            }
+            qDebug() &lt;&lt; Q_FUNC_INFO &lt;&lt; "Loaded user =" &lt;&lt; user_name;
+
+            if (user_id.isEmpty() || expire.isEmpty() || token.isEmpty() 
+                || email.isEmpty() || user_name.isEmpty()) continue;
+
+            DoubanUser ruser;
+
+            ruser.user_id = user_id;
+            ruser.expire = expire;
+            ruser.token = token;
+            ruser.email = email;
+            ruser.user_name = user_name;
+            ruser.password = password;
+
+            _douban-&gt;setUser(ruser);
+        }
+    }
+}
+else {
+    file.remove();
+}
+file.close();
+</code></pre>
+
+<p>}
+```</p>
+
+<p>读取函数<code>saveBackupData()</code></p>
+
+<p>```cpp
+void MainWindow::saveBackupData(const QString&amp; filename) {</p>
+
+<pre><code>QFile file(filename);
+if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate |QIODevice::Text)) {
+    return;
+}
+QTextStream out(&amp;file);
+out.setCodec("UTF-8");
+
+QDomDocument doc;
+
+QDomProcessingInstruction instruction =
+        doc.createProcessingInstruction("xml", "version=\"1.0\" encoding=\"UTF-8\"");
+doc.appendChild(instruction);
+QDomElement doubanfm = doc.createElement("DoubanFM");
+doubanfm.setAttribute("version", VERSION);
+QDomElement channel = doc.createElement("channel");
+QDomText channel_val = doc.createTextNode(QString::number(_channel));
+channel.appendChild(channel_val);
+QDomElement volume = doc.createElement("volume");
+QDomText volume_val = doc.createTextNode(QString::number(audioOutput-&gt;volume()));
+volume.appendChild(volume_val);
+doubanfm.appendChild(volume);
+doubanfm.appendChild(channel);
+
+QDomElement user = doc.createElement("user");
+user.setAttribute("user_id", _douban-&gt;getUser().user_id);
+QDomElement expire = doc.createElement("expire");
+QDomText expire_t = doc.createTextNode(_douban-&gt;getUser().expire);
+expire.appendChild(expire_t);
+user.appendChild(expire);
+QDomElement token = doc.createElement("token");
+QDomText token_t = doc.createTextNode(_douban-&gt;getUser().token);
+token.appendChild(token_t);
+user.appendChild(token);
+QDomElement uname = doc.createElement("user_name");
+QDomText uname_t = doc.createTextNode(_douban-&gt;getUser().user_name);
+uname.appendChild(uname_t);
+user.appendChild(uname);
+QDomElement uemail = doc.createElement("email");
+QDomText uemail_t = doc.createTextNode(_douban-&gt;getUser().email);
+uemail.appendChild(uemail_t);
+user.appendChild(uemail);
+QDomElement upasswd = doc.createElement("password");
+QDomText upasswd_t = doc.createTextNode(_douban-&gt;getUser().password);
+upasswd.appendChild(upasswd_t);
+user.appendChild(upasswd);
+doubanfm.appendChild(user);
+
+doc.appendChild(doubanfm);
+doc.save(out, 4, QDomNode::EncodingFromTextStream);
+
+file.close();
+</code></pre>
+
+<p>}
+```</p>
+]]></content>
+  </entry>
+  
+</feed>
