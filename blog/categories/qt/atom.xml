@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Qt | 木頭人 - 宇騰]]></title>
   <link href="http://zonyitoo.github.com/blog/categories/qt/atom.xml" rel="self"/>
   <link href="http://zonyitoo.github.com/"/>
-  <updated>2013-01-22T17:50:16+08:00</updated>
+  <updated>2013-01-23T14:08:45+08:00</updated>
   <id>http://zonyitoo.github.com/</id>
   <author>
     <name><![CDATA[Yutang Chung]]></name>
@@ -309,7 +309,7 @@
 
 <p>平时写GUI软件为了方便都使用Python来编写，这次为了不让自己太懒，决定使用C++编写！</p>
 
-<p>项目地址：<a href="https://gitcafe.com/zonyitoo/doubanfm-qt/tree/master">https://gitcafe.com/zonyitoo/doubanfm-qt/tree/master</a></p>
+<p>项目地址：<a href="https://gitcafe.com/zonyitoo/doubanfm-qt">https://gitcafe.com/zonyitoo/doubanfm-qt</a></p>
 
 <p>使用的库：</p>
 
@@ -426,6 +426,53 @@ DoubanLoginDialog *loginDialog;
 <li>必须调用<code>Phonon::createPath(MediaNode*, MediaNode*)</code>来把<code>MediaObject</code>与<code>AudioOutput</code>连接起来，不然没有声音</li>
 </ul>
 
+
+<h2>使用QSettings来保存数据</h2>
+
+<p>这种方法保存起来会比较简单，请看这两个函数</p>
+
+<p>```cpp
+void MainWindow::loadBackupData(const QString&amp; filename) {</p>
+
+<pre><code>QSettings settings(filename, QSettings::NativeFormat);
+_channel = settings.value("channel", 0).toInt();
+audioOutput-&gt;setVolume(settings.value("volume", 0.5).toDouble());
+QVariantMap user = settings.value("user").toMap();
+
+if (!user.empty()) {
+    DoubanUser nuser;
+    nuser.email = user.value("email", "").toString();
+    nuser.expire = user.value("expire", "").toString();
+    nuser.password = user.value("password", "").toString();
+    nuser.token = user.value("token", "").toString();
+    nuser.user_id = user.value("user_id", "").toString();
+    nuser.user_name = user.value("user_name", "").toString();
+
+    _douban-&gt;setUser(nuser);
+}
+</code></pre>
+
+<p>}</p>
+
+<p>void MainWindow::saveBackupData(const QString&amp; filename) {</p>
+
+<pre><code>QSettings settings(filename, QSettings::NativeFormat);
+settings.setValue("channel", _channel);
+settings.setValue("volume", audioOutput-&gt;volume());
+QVariantMap user;
+DoubanUser curUser = _douban-&gt;getUser();
+user.insert("email", curUser.email);
+user.insert("expire", curUser.expire);
+user.insert("password", curUser.password);
+user.insert("token", curUser.token);
+user.insert("user_id", curUser.user_id);
+user.insert("user_name", curUser.user_name);
+settings.setValue("user", user);
+settings.sync();
+</code></pre>
+
+<p>}
+```</p>
 
 <h3>使用XML来保存数据</h3>
 

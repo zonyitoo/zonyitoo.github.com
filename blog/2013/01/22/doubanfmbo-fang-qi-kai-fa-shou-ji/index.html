@@ -407,7 +407,7 @@
 
 <p>平时写GUI软件为了方便都使用Python来编写，这次为了不让自己太懒，决定使用C++编写！</p>
 
-<p>项目地址：<a href="https://gitcafe.com/zonyitoo/doubanfm-qt/tree/master">https://gitcafe.com/zonyitoo/doubanfm-qt/tree/master</a></p>
+<p>项目地址：<a href="https://gitcafe.com/zonyitoo/doubanfm-qt">https://gitcafe.com/zonyitoo/doubanfm-qt</a></p>
 
 <p>使用的库：</p>
 
@@ -583,6 +583,81 @@
 <ul>
 <li>必须调用<code>Phonon::createPath(MediaNode*, MediaNode*)</code>来把<code>MediaObject</code>与<code>AudioOutput</code>连接起来，不然没有声音</li>
 </ul>
+
+
+<h2>使用QSettings来保存数据</h2>
+
+<p>这种方法保存起来会比较简单，请看这两个函数</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="kt">void</span> <span class="n">MainWindow</span><span class="o">::</span><span class="n">loadBackupData</span><span class="p">(</span><span class="k">const</span> <span class="n">QString</span><span class="o">&amp;</span> <span class="n">filename</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">QSettings</span> <span class="n">settings</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">QSettings</span><span class="o">::</span><span class="n">NativeFormat</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">_channel</span> <span class="o">=</span> <span class="n">settings</span><span class="p">.</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;channel&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span><span class="n">toInt</span><span class="p">();</span>
+</span><span class='line'>    <span class="n">audioOutput</span><span class="o">-&gt;</span><span class="n">setVolume</span><span class="p">(</span><span class="n">settings</span><span class="p">.</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;volume&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">).</span><span class="n">toDouble</span><span class="p">());</span>
+</span><span class='line'>    <span class="n">QVariantMap</span> <span class="n">user</span> <span class="o">=</span> <span class="n">settings</span><span class="p">.</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;user&quot;</span><span class="p">).</span><span class="n">toMap</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">user</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">DoubanUser</span> <span class="n">nuser</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">nuser</span><span class="p">.</span><span class="n">email</span> <span class="o">=</span> <span class="n">user</span><span class="p">.</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;email&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">).</span><span class="n">toString</span><span class="p">();</span>
+</span><span class='line'>        <span class="n">nuser</span><span class="p">.</span><span class="n">expire</span> <span class="o">=</span> <span class="n">user</span><span class="p">.</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;expire&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">).</span><span class="n">toString</span><span class="p">();</span>
+</span><span class='line'>        <span class="n">nuser</span><span class="p">.</span><span class="n">password</span> <span class="o">=</span> <span class="n">user</span><span class="p">.</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;password&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">).</span><span class="n">toString</span><span class="p">();</span>
+</span><span class='line'>        <span class="n">nuser</span><span class="p">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">user</span><span class="p">.</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;token&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">).</span><span class="n">toString</span><span class="p">();</span>
+</span><span class='line'>        <span class="n">nuser</span><span class="p">.</span><span class="n">user_id</span> <span class="o">=</span> <span class="n">user</span><span class="p">.</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;user_id&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">).</span><span class="n">toString</span><span class="p">();</span>
+</span><span class='line'>        <span class="n">nuser</span><span class="p">.</span><span class="n">user_name</span> <span class="o">=</span> <span class="n">user</span><span class="p">.</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;user_name&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">).</span><span class="n">toString</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">_douban</span><span class="o">-&gt;</span><span class="n">setUser</span><span class="p">(</span><span class="n">nuser</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="n">MainWindow</span><span class="o">::</span><span class="n">saveBackupData</span><span class="p">(</span><span class="k">const</span> <span class="n">QString</span><span class="o">&amp;</span> <span class="n">filename</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">QSettings</span> <span class="n">settings</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">QSettings</span><span class="o">::</span><span class="n">NativeFormat</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">settings</span><span class="p">.</span><span class="n">setValue</span><span class="p">(</span><span class="s">&quot;channel&quot;</span><span class="p">,</span> <span class="n">_channel</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">settings</span><span class="p">.</span><span class="n">setValue</span><span class="p">(</span><span class="s">&quot;volume&quot;</span><span class="p">,</span> <span class="n">audioOutput</span><span class="o">-&gt;</span><span class="n">volume</span><span class="p">());</span>
+</span><span class='line'>    <span class="n">QVariantMap</span> <span class="n">user</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">DoubanUser</span> <span class="n">curUser</span> <span class="o">=</span> <span class="n">_douban</span><span class="o">-&gt;</span><span class="n">getUser</span><span class="p">();</span>
+</span><span class='line'>    <span class="n">user</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="s">&quot;email&quot;</span><span class="p">,</span> <span class="n">curUser</span><span class="p">.</span><span class="n">email</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">user</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="s">&quot;expire&quot;</span><span class="p">,</span> <span class="n">curUser</span><span class="p">.</span><span class="n">expire</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">user</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="s">&quot;password&quot;</span><span class="p">,</span> <span class="n">curUser</span><span class="p">.</span><span class="n">password</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">user</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="s">&quot;token&quot;</span><span class="p">,</span> <span class="n">curUser</span><span class="p">.</span><span class="n">token</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">user</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="s">&quot;user_id&quot;</span><span class="p">,</span> <span class="n">curUser</span><span class="p">.</span><span class="n">user_id</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">user</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="s">&quot;user_name&quot;</span><span class="p">,</span> <span class="n">curUser</span><span class="p">.</span><span class="n">user_name</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">settings</span><span class="p">.</span><span class="n">setValue</span><span class="p">(</span><span class="s">&quot;user&quot;</span><span class="p">,</span> <span class="n">user</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">settings</span><span class="p">.</span><span class="n">sync</span><span class="p">();</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <h3>使用XML来保存数据</h3>
