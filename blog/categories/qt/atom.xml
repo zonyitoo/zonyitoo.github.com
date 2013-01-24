@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Qt | 木頭人 - 宇騰]]></title>
   <link href="http://zonyitoo.github.com/blog/categories/qt/atom.xml" rel="self"/>
   <link href="http://zonyitoo.github.com/"/>
-  <updated>2013-01-23T14:08:45+08:00</updated>
+  <updated>2013-01-24T10:17:18+08:00</updated>
   <id>http://zonyitoo.github.com/</id>
   <author>
     <name><![CDATA[Yutang Chung]]></name>
@@ -427,7 +427,7 @@ DoubanLoginDialog *loginDialog;
 </ul>
 
 
-<h2>使用QSettings来保存数据</h2>
+<h3>使用QSettings来保存数据</h3>
 
 <p>这种方法保存起来会比较简单，请看这两个函数</p>
 
@@ -637,6 +637,10 @@ file.close();
 
 <p>}
 ```</p>
+
+<h2>总结</h2>
+
+<p>虽然这次做的客户端没有什么很特别的功能，也看不出与网页版的区别。但像「生活大爆炸」的人们说的，「Because I can!」</p>
 ]]></content>
   </entry>
   
