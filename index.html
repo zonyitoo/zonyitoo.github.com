@@ -116,6 +116,8 @@
 
 <p>豆瓣有发布<a href="http://developer.douban.com/">开放的API</a>，可惜这之中并不包括DoubanFM的API，只能通过抓包来分析了。网上也有很多类似的分析文章，一般都选择这个地址<code>http://douban.fm/j/mine/playlist</code>来作为API接口，这是网页版播放端使用的接口，其实豆瓣出了个新的地址<code>http://www.douban.com/j/app/radio</code>。以下分析都基于新的地址。</p>
 
+<p>两个地址的区别是，<code>http://douban.fm/j/mine/playlist</code>是用cookie来识别登录用户的，而<code>http://www.douban.com/j/app/radio</code>则是在一次登录之后用token来识别，属于OAuth。建议使用这个接口，会好用一些。</p>
+
 <h2>频道（Channels）</h2>
 
 <p>使用GET方法对<code>http://www.douban.com/j/app/radio/channels</code>发起请求，将返回一个JSON，结构如下</p>
