@@ -3,15 +3,16 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>宇騰</title>
+	<title>bad_alloc</title>
 	<meta name="author" content="Yutang Chung">
 
 	
-	<meta name="description" content="前言 因为个人比较喜欢边听音乐边工作，DoubanFM是我的首选，没有为什么，只是因为喜欢而已。但是对于Linuxer来说，DoubanFM缺乏一个好的播放器，网页版用着不爽（Flash的），Chrome插件版又不能登录，Adobe Air版开着风扇转得厉害。 &hellip;">
+	<meta name="description" content="进程与线程的区别 进程是具有一定独立功能的程序关于某个数据集合上的一次运行活动，进程是系统进行资源分配和调试的一个独立单位。
+线程是进程的一个实体，是CPU调度和分派的基本单位，它是比进程更小的能独立运行的基本单位。线程自己基本上不拥有系统资源，只拥有一点在运行中必不可少的资源（如程序计数器、 &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-	<link href="/atom.xml" rel="alternate" title="宇騰" type="application/atom+xml">
+	<link href="/atom.xml" rel="alternate" title="bad_alloc" type="application/atom+xml">
 	<link rel="canonical" href="">
 	<link href="/favicon.png" rel="shortcut icon">
 	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
@@ -27,7 +28,7 @@
 			<header id="header" class="inner"><div class="profilepic">	
 	<img src="/images/dp.jpg" alt="Profile Picture" style="width: 160px;">
 </div>
-<h1><a href="/">宇騰</a></h1>
+<h1><a href="/">bad_alloc</a></h1>
 <nav id="main-nav"><ul class="main">
 	<li><a href="/">博客</a></li>
 	<li><a href="/blog/archives">文章列表</a></li>
@@ -78,6 +79,455 @@
 			
 			<div class="mid-col-container">
 				<div id="content" class="inner">
+
+
+    <article class="post">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-10T22:46:00+08:00" pubdate data-updated="true">Apr 10<span>th</span>, 2013</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/linux/'>Linux</a>
+
+
+</div>
+		
+			<span class="comments"><a href="/blog/2013/04/10/chu-tan-linuxjin-cheng-xian-cheng//index.html#disqus_thread">评论</a></span>
+		
+	</div>
+	<h1 class="title"><a href="/blog/2013/04/10/chu-tan-linuxjin-cheng-xian-cheng/">初探Linux进程线程</a></h1>
+	<div class="entry-content">
+		<h2>进程与线程的区别</h2>
+
+<ul>
+<li><p>进程是具有一定独立功能的程序关于某个数据集合上的一次运行活动，进程是系统进行资源分配和调试的一个独立单位。</p></li>
+<li><p>线程是进程的一个实体，是CPU调度和分派的基本单位，它是比进程更小的能独立运行的基本单位。线程自己基本上不拥有系统资源，只拥有一点在运行中必不可少的资源（如程序计数器、一组寄存器和栈），但是它可以与同属一个进程的其它线程共享进程所拥有的全部资源。</p></li>
+</ul>
+
+
+<p>简单一句：<strong>进程</strong>是资源分配的最小单位，<strong>线程</strong>是程序执行的最小单位。</p>
+
+<p>在创建开销上，创建一个进程需要为它分配独立的地址空间，建立众多的数据表来维护它的代码段、堆栈段和数据段；创建一个线程只需要创建其运行必须的数据，同一个进程下的线程之间共享数据，相对创建进程来说代价小得多。</p>
+
+<h2>Linux下的进程线程使用</h2>
+
+<h3>进程</h3>
+
+<p>进程使用比较简单，简单一个<code>fork()</code>系统调用就可以创建一个新进程，<code>fork()</code>会返回两次，在子进程中会返回0，而父进程中返回子进程的pid。创建新进程是把父进程的所有信息拷贝一份，包括所有的数据，然后从父进程刚才的地方继续执行下去，但两个已经是完全不同的进程。</p>
+
+<p>使用时要注意的是，要退出进程必须要调用<code>exit()</code>，不然子进程的执行轨迹回到<code>main()</code>函数去，会产生意想不到的效果。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="cp">#include &lt;sys/types.h&gt;</span>
+</span><span class='line'><span class="cp">#include &lt;unistd.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="n">subprocess</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">//do_something...</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>  <span class="c1">// 这个要记得，除非你是想子进程也做父进程同样的工作</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">pid_t</span> <span class="n">pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">subprocess</span><span class="p">();</span> <span class="c1">// 子进程</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>        <span class="p">;</span> <span class="c1">// 父进程</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如上调用<code>fork()</code>系统调用可以复制父进程来创建一个全新进程，有没有办法可以把子进程里面的东西全改掉变成另一个程序呢？有！那就是<code>exec</code>函数。</p>
+
+<p>exec类函数有以下几种，目的都是一样，用可执行程序完全替换当前进程。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="kt">int</span> <span class="n">execl</span>    <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg1</span><span class="p">,</span> <span class="p">...,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argn</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">execle</span>   <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg1</span><span class="p">,</span> <span class="p">...,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argn</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">envp</span><span class="p">[]);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">execlp</span>   <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg1</span><span class="p">,</span> <span class="p">...,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argn</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">execlpe</span>  <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg1</span><span class="p">,</span> <span class="p">...,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argn</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">envp</span><span class="p">[]);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">execv</span>    <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[]);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">execve</span>   <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[],</span> <span class="kt">char</span> <span class="o">*</span><span class="n">envp</span><span class="p">[]);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">execvp</span>   <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[]);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">execvpe</span>  <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[],</span> <span class="kt">char</span> <span class="o">*</span><span class="n">envp</span><span class="p">[]);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>后缀p是指<code>PATH</code>，可以利用<code>$PATH</code>变量来查找子程序</li>
+<li>后缀l是指希望接收逗号分隔的参数列表，列表以<code>NULL</code>作为列表结束标志</li>
+<li>后缀v是指希望接收一个字符串数组作为参数列表，结尾为NULL</li>
+<li>后缀e是指传递参数<code>char *envp[]</code>用以改变子进程的运行环境，该环境也是一个以<code>NULL</code>结尾的字符串数组</li>
+</ul>
+
+
+<p>调用失败将返回-1，失败原因存在<code>errno</code>中。</p>
+
+<h3>线程</h3>
+
+<p>线程的函数都是<code>libpthread</code>（POSIX Threads）库中，编译时要加入<code>-lpthread</code>来连接才能使用。</p>
+
+<p>基本用法</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="cp">#include &lt;pthread.h&gt;</span>
+</span><span class='line'><span class="cp">#include &lt;cstdio&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">thread_func</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">arg</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;Thread %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">arg</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">pthread_t</span> <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">pthread_create</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pid</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">thread_func</span><span class="p">,</span> <span class="s">&quot;Hello World&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;Main Thread</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在<code>pthread</code>库中还有其它函数用以对线程操作</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="kt">int</span> <span class="n">pthread_create</span><span class="p">(</span><span class="n">pthead_t</span> <span class="o">*</span><span class="n">restrict_tidp</span><span class="p">,</span> <span class="k">const</span> <span class="n">pthread_attr_t</span> <span class="o">*</span><span class="n">restrict_attr</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">start_rtn</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="p">),</span> <span class="kt">void</span> <span class="o">*</span><span class="n">restrict_arg</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_exit</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">return_val</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cancel</span><span class="p">(</span><span class="n">pthread_t</span> <span class="kr">thread</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_join</span><span class="p">(</span><span class="n">pthread_t</span> <span class="kr">thread</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">retval</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_init</span><span class="p">(</span><span class="n">pthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_destroy</span><span class="p">(</span><span class="n">pthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_kill</span><span class="p">(</span><span class="n">pthread_t</span> <span class="kr">thread</span><span class="p">,</span> <span class="kt">int</span> <span class="n">sig</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上述是比较常用的几个函数，调用成功均返回0，失败返回-1。</p>
+
+<ul>
+<li><p><code>pthread_create</code>的第二个参数是线程的属性，使用<code>pthread_attr_init</code>初始化和使用<code>pthread_attr_destroy</code>来销毁，具体属性可查看man</p></li>
+<li><p><code>pthread_exit</code>由线程自己调用，参数是退出时返回给主线程的值</p></li>
+<li><p><code>pthread_join</code>可以挂起当前线程等待参数一所指定的线程退出，退出后该程序的返回值会写入<code>retval</code>所指向的内存空间。若线程已结束，该函数立即返回并获得返回值。</p></li>
+<li><p><code>pthread_cancel</code>可以让一个线程主动结束另一个线程</p></li>
+<li><p><code>pthread_kill</code>可以向线程发送信号，信号定义在<code>signal.h</code>中，如<code>SIGINT</code>，<code>SIGKILL</code></p></li>
+</ul>
+
+
+<h2>同步与互斥</h2>
+
+<p>同步与互斥是并发编程经常遇到的问题，在线程和进程中都可以使用信号量，而POSIX Threads自己定义了一些「条件变量」和「互斥量」，可以简化操作。</p>
+
+<h3>信号量</h3>
+
+<p>在Linux中，有三种信号量</p>
+
+<ul>
+<li><p>POSIX有名信号量：使用POSIX IPC名字标识（通过特定函数，调用一个绝对文件路径作为参数，返回一个特定标识），可用于进程通信</p></li>
+<li><p>POSIX基于内存的信号量：存放在共享内存区（进程间共享内存区或者线程间共享内存区），可用于线程或进程间同步</p></li>
+<li><p>System V信号量：在内核中维护，可用于进程或线程同步</p></li>
+</ul>
+
+
+<p>信号量与「互斥锁」和「条件变量」有什么不同呢？</p>
+
+<ul>
+<li><p>互斥锁必须总是由给它上锁的程序解锁，信号量不用</p></li>
+<li><p>互斥锁要么被锁住要么被解开（类似于二元信号量）</p></li>
+</ul>
+
+
+<h4>有名信号量</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="cp">#include &lt;fcntl.h&gt;      </span><span class="cm">/* For O_* constants */</span><span class="cp"></span>
+</span><span class='line'><span class="cp">#include &lt;sys/stat.h&gt;   </span><span class="cm">/* For mode constants */</span><span class="cp"></span>
+</span><span class='line'><span class="cp">#include &lt;semaphore.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem_open</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">int</span> <span class="n">oflag</span><span class="p">);</span>
+</span><span class='line'><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem_open</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">int</span> <span class="n">oflag</span><span class="p">,</span> <span class="n">mode_t</span> <span class="n">mode</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">value</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">sem_close</span><span class="p">(</span><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sem_unlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>一个进程关闭了之后，内核会自动的对其上打开的的所有有名信号量自动执行关闭，但这并不代表就删除了此信号量。每个信号量都有一个应用计数器记录当前的打开次数，当记录数大于0时，<code>unlink</code>就将其从文件系统中删除，但是其信号的析构要等到最后一个<code>sem_close</code>发生时为止。</p>
+
+<h4>基于内存的信号量</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="cp">#include &lt;semaphore.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">sem_init</span><span class="p">(</span><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pshared</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">value</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">sem_destroy</span><span class="p">(</span><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中若要使用信号量进行进程同步，那么<code>sem</code>应分配在共享内存空间。而<code>pshared</code>的值有两种</p>
+
+<ul>
+<li><p>nonzero值：进程间共享，信号量应存放在共享内存空间</p></li>
+<li><p>zero值：线程间共享，信号量应存放在线程共享的内存空间</p></li>
+</ul>
+
+
+<h4>信号量的操作</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="cp">#include &lt;semaphore.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">sem_wait</span><span class="p">(</span><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sem_trywait</span><span class="p">(</span><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sem_timedwait</span><span class="p">(</span><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">timespec</span> <span class="o">*</span><span class="n">abs_timeout</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">sem_post</span><span class="p">(</span><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">sem_getvalue</span><span class="p">(</span><span class="n">sem_t</span> <span class="o">*</span><span class="n">sem</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">sval</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中<code>wait</code>函数是使信号量的值减1，若信号量的值为0，则把当前进程挂起直到信号量的值大于0。<code>sem_trywait</code>是非阻塞的，进程不挂起；<code>sem_timedwait</code>有一个超时时间，超过了时间进程就会继续执行。</p>
+
+<p><code>post</code>函数使信号量的值加1，<code>getvalue</code>函数可以获取当前信号量的值。</p>
+
+<h3>互斥量与条件变量</h3>
+
+<h4>互斥量</h4>
+
+<p>互斥量相当于二元信号量，它要么是0要么是1。而条件变量则是可以让线程等待某一特定条件发生。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="cp">#include &lt;pthread.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_init</span><span class="p">(</span><span class="n">pthread_mutex_t</span> <span class="o">*</span><span class="n">restrict_mutex</span><span class="p">,</span> <span class="k">const</span> <span class="n">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">restrict_attr</span><span class="p">);</span>
+</span><span class='line'><span class="n">pthread_mutex_t</span> <span class="n">mutex</span> <span class="o">=</span> <span class="n">PTHREAD_MUTEX_INITIALIZER</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutexattr_init</span><span class="p">(</span><span class="n">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">mattr</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_destroy</span><span class="p">(</span><span class="n">pthread_mutex_t</span> <span class="o">*</span><span class="n">restrict_mutex</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutexattr_destroy</span><span class="p">(</span><span class="n">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">mattr</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_lock</span><span class="p">(</span><span class="n">pthread_mutex_t</span> <span class="o">*</span><span class="n">restrict_mutex</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_unlock</span><span class="p">(</span><span class="n">pthread_mutex_t</span> <span class="o">*</span><span class="n">restrict_mutex</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中第二行的<code>PTHREAD_MUTEX_INITIALIZER</code>是C++11的新特性，直接赋值。</p>
+
+<p><code>mutexattr</code>是互斥锁的属性，调用<code>pthread_mutexattr_init</code>后的默认值是<code>PTHREAD_PROCESS_PRIVATE</code>，即可以在进程内使用的互斥锁，另外的值是<code>PTHREAD_PROCESS_SHARED</code></p>
+
+<p>使用互斥量的方法很简单，在进入临界区时先调用<code>pthread_mutex_lock</code>，出临界区时再调用<code>pthread_mutex_unlock</code>即可。</p>
+
+<h4>条件变量</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="cp">#include &lt;pthread.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_init</span><span class="p">(</span><span class="n">pthread_mutex_t</span> <span class="o">*</span><span class="n">restrict_cond</span><span class="p">,</span> <span class="k">const</span> <span class="n">pthread_condattr_t</span> <span class="o">*</span><span class="n">cond_attr</span><span class="p">);</span>
+</span><span class='line'><span class="n">pthread_cond_t</span> <span class="n">cond</span> <span class="o">=</span> <span class="n">PTHREAD_COND_INITIALIZER</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_condattr_init</span><span class="p">(</span><span class="n">pthread_condattr_t</span> <span class="o">*</span><span class="n">cond_attr</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_condattr_destroy</span><span class="p">(</span><span class="n">pthread_condattr_t</span> <span class="o">*</span><span class="n">cond_attr</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_destroy</span><span class="p">(</span><span class="n">pthread_cond_t</span> <span class="o">*</span><span class="n">restrict_cond</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_wait</span><span class="p">(</span><span class="n">pthread_cond_t</span> <span class="o">*</span><span class="n">cond</span><span class="p">,</span> <span class="n">pthead_mutex_t</span> <span class="o">*</span><span class="n">mutex</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_signal</span><span class="p">(</span><span class="n">pthread_cond_t</span> <span class="o">*</span><span class="n">cond</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_brocast</span><span class="p">(</span><span class="n">pthread_cond_t</span> <span class="o">*</span><span class="n">cond</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>初始化和属性都和互斥量差不多，主要在于<code>wait</code>和<code>signal</code>的使用。条件变量需要一个互斥量来保证每次都只能有一个线程在等待条件，所以在调用<code>pthread_cond_wait</code>之前先要把<code>mutex</code>给锁上，如下</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='cpp'><span class='line'><span class="cp">#include &lt;pthread.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">pthread_mutex_t</span> <span class="n">mutex</span><span class="p">;</span>
+</span><span class='line'><span class="n">pthread_cond_t</span> <span class="n">cond</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">thread_func</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">argument</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">pthread_mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex</span><span class="p">);</span> <span class="c1">// 必须</span>
+</span><span class='line'>    <span class="n">pthread_cond_wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cond</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mutex</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">pthread_mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex</span><span class="p">);</span> <span class="c1">// 必须</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Do something</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">pthread_mutex_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">pthread_cond_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cond</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// Do something</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">pthread_cond_signal</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cond</span><span class="p">);</span>
+</span><span class='line'>        <span class="c1">//pthread_cond_brocast(&amp;cond);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">pthread_mutex_destroy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">pthread_cond_destroy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cond</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>signal</code>与<code>brocast</code>的不同是<code>signal</code>每次只唤醒等待在<code>pthread_cond_wait</code>上的一个线程，而<code>brocast</code>则唤醒所有等待的线程。</p>
+
+		
+		
+	</div>
+
+</article>
 
 
     <article class="post">
@@ -3167,124 +3617,10 @@ pacman -S ntfs-3g
 
 </article>
 
-
-    <article class="post">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-04-14T13:11:00+08:00" pubdate data-updated="true">Apr 14<span>th</span>, 2012</time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/android/'>Android</a>
-
-
-</div>
-		
-			<span class="comments"><a href="/blog/2012/04/14/androidyu-fu-wu-qi-jin-xing-tong-xin-de-wen-ti//index.html#disqus_thread">评论</a></span>
-		
-	</div>
-	<h1 class="title"><a href="/blog/2012/04/14/androidyu-fu-wu-qi-jin-xing-tong-xin-de-wen-ti/">Android与服务器进行通信的问题</a></h1>
-	<div class="entry-content">
-		<p>最近没有什么比较有趣而又有挑战性的项目在手，只好继续在<strong>WHJ</strong>老师的实验室里面准备搞ARM开发，唯一期待的就是准备筹建的参加全国大赛的机器人队，希望到时去面试能进！我正在怀疑我当时是不是应该选电子系而不是计算机系，毕竟现在表现得就像对底层的兴趣高于对前台开发或软件开发的兴趣。</p>
-
-<p>题外话说多了，入正题，这次探讨的是Android与Django架构服务器之间通信中遇到的问题及我的解决方法</p>
-
-<h1>应答字符串为JSON格式时，字符串两端会自动加上一个双引号</h1>
-
-<p>这个题目很奇怪，让人看起来不知道是在讲什么，我们来看一个实际例子</p>
-
-<ul>
-<li>手机这边向服务器请求用户登录，发送JSON字符串为</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span><span class="s2">&quot;user_name&quot;</span><span class="o">:</span> <span class="nx">user_name</span><span class="p">,</span> <span class="s2">&quot;user_password&quot;</span><span class="o">:</span> <span class="nx">user_password</span><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>服务器端收到的JSON字符串为</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="s2">&quot;{&quot;</span><span class="nx">user_name</span><span class="s2">&quot;: user_name, &quot;</span><span class="nx">user_password</span><span class="s2">&quot;: user_password}&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>反之亦然。</p>
-
-<p>发现不同了么？对了，就是左右两端多了个引号。这个BUG非常隐秘，这两个符号足足困扰了我三天才注意到它多了这么两个符号，导致整个字符串从一个JSONObject变成了一个String类型，直接写入JSONObject的构造函数会抛出JSONException</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">responseStr</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
-</span><span class='line'><span class="n">JSONTokener</span> <span class="n">tokener</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JSONTokener</span><span class="o">(</span><span class="n">responseStr</span><span class="o">);</span>
-</span><span class='line'><span class="n">JSONObject</span> <span class="n">jsonobj</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JSONObject</span><span class="o">((</span><span class="n">String</span><span class="o">)</span> <span class="n">tokener</span><span class="o">.</span><span class="na">nextValue</span><span class="o">());</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>当然，看到这里一般来说都会想到，直接用substring取出中间那段字符不就行了么？是的，我刚开始也是这样想的，问题是不行，JSONObject的构造函数同样会解释错误，只有这样才是对的…</p>
-
-<p>但是，在服务器端用Python的substring却可以…非常怪异。</p>
-
-<h1>发送密码用Base64加密的问题</h1>
-
-<p>Android自身带有Base64加密与解密的包，可以方便地加密密码方便传输。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">res</span> <span class="o">=</span> <span class="o">...</span>
-</span><span class='line'><span class="n">String</span> <span class="n">encode_str</span> <span class="o">=</span> <span class="n">Base64</span><span class="o">.</span><span class="na">encodeToString</span><span class="o">(</span><span class="n">res</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">Base64</span><span class="o">.</span><span class="na">DEFAULT</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>看起来用法与Java所带的sun.misc的<code>Base64Encoder</code>这些用法差不多，但应该留意到了，在encode的时候，会有一个参数Flags（即上面代码中的<code>Base64.DEFAULT</code>）</p>
-
-<p>这个参数有什么用呢？根据Android SDK的描述，这种参数有5个：</p>
-
-<blockquote><ol>
-<li>CRLF 这个参数看起来比较眼熟，它就是Win风格的换行符，意思就是使用CR LF这一对作为一行的结尾而不是Unix风格的LF</li>
-<li>DEFAULT 这个参数是默认，使用默认的方法来加密</li>
-<li>NO_PADDING 这个参数是略去加密字符串最后的”=”</li>
-<li>NO_WRAP 这个参数意思是略去所有的换行符（设置后CRLF就没用了）</li>
-<li>URL_SAFE 这个参数意思是加密时不使用对URL和文件名有特殊意义的字符来作为加密字符，具体就是以-和_取代+和/</li>
-</ol>
-</blockquote>
-
-<p>若用<code>Base64.DEFAULT</code>发送服务器不能识别，则应该选用<code>Base64.NO_WRAP | Baser64.URL_SAFE</code>来加密</p>
-
-<blockquote><p>例如原字符串为：QUFodH?????</p>
-
-<p>用DEFAULT加密后为：UVVGb2RIPz8/Pz8=</p>
-
-<p>用NO_WRAP | URL_SAFE加密后为：UVVGb2RIPz8_Pz8=</p>
-
-<p>用sun.misc.BASE64Encoder加密后为：UVVGb2RIPz8/Pz8=</p></blockquote>
-
-<p>由上面例子可以清楚见到，<code>DEFAULT</code>加密方式出现了/这个URL中会比较敏感的字符，而<code>URL_SAFE</code>方法加密则不会出现</p>
-
-		
-		
-	</div>
-
-</article>
-
 <nav id="pagenavi">
     
+    
+        <a href="/blog/page/2/" class="next">Next</a>
     
     <div class="center"><a href="/blog/archives">Blog Archives</a></div>
 </nav></div>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: Linux | 宇騰]]></title>
+  <title><![CDATA[Category: Linux | bad_alloc]]></title>
   <link href="http://zonyitoo.github.com/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://zonyitoo.github.com/"/>
-  <updated>2013-01-29T00:05:50+08:00</updated>
+  <updated>2013-04-14T23:18:45+08:00</updated>
   <id>http://zonyitoo.github.com/</id>
   <author>
     <name><![CDATA[Yutang Chung]]></name>
@@ -12,6 +12,322 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[初探Linux进程线程]]></title>
+    <link href="http://zonyitoo.github.com/blog/2013/04/10/chu-tan-linuxjin-cheng-xian-cheng/"/>
+    <updated>2013-04-10T22:46:00+08:00</updated>
+    <id>http://zonyitoo.github.com/blog/2013/04/10/chu-tan-linuxjin-cheng-xian-cheng</id>
+    <content type="html"><![CDATA[<h2>进程与线程的区别</h2>
+
+<ul>
+<li><p>进程是具有一定独立功能的程序关于某个数据集合上的一次运行活动，进程是系统进行资源分配和调试的一个独立单位。</p></li>
+<li><p>线程是进程的一个实体，是CPU调度和分派的基本单位，它是比进程更小的能独立运行的基本单位。线程自己基本上不拥有系统资源，只拥有一点在运行中必不可少的资源（如程序计数器、一组寄存器和栈），但是它可以与同属一个进程的其它线程共享进程所拥有的全部资源。</p></li>
+</ul>
+
+
+<p>简单一句：<strong>进程</strong>是资源分配的最小单位，<strong>线程</strong>是程序执行的最小单位。</p>
+
+<p>在创建开销上，创建一个进程需要为它分配独立的地址空间，建立众多的数据表来维护它的代码段、堆栈段和数据段；创建一个线程只需要创建其运行必须的数据，同一个进程下的线程之间共享数据，相对创建进程来说代价小得多。</p>
+
+<h2>Linux下的进程线程使用</h2>
+
+<h3>进程</h3>
+
+<p>进程使用比较简单，简单一个<code>fork()</code>系统调用就可以创建一个新进程，<code>fork()</code>会返回两次，在子进程中会返回0，而父进程中返回子进程的pid。创建新进程是把父进程的所有信息拷贝一份，包括所有的数据，然后从父进程刚才的地方继续执行下去，但两个已经是完全不同的进程。</p>
+
+<p>使用时要注意的是，要退出进程必须要调用<code>exit()</code>，不然子进程的执行轨迹回到<code>main()</code>函数去，会产生意想不到的效果。</p>
+
+<p>```cpp</p>
+
+<h1>include &lt;sys/types.h></h1>
+
+<h1>include &lt;unistd.h></h1>
+
+<p>void subprocess() {</p>
+
+<pre><code>//do_something...
+
+exit(0);  // 这个要记得，除非你是想子进程也做父进程同样的工作
+</code></pre>
+
+<p>}</p>
+
+<p>int main(int argc, char **argv) {</p>
+
+<pre><code>pid_t pid = fork();
+
+if (pid == 0)
+    subprocess(); // 子进程
+else
+    ; // 父进程
+
+return 0;
+</code></pre>
+
+<p>}
+```</p>
+
+<p>如上调用<code>fork()</code>系统调用可以复制父进程来创建一个全新进程，有没有办法可以把子进程里面的东西全改掉变成另一个程序呢？有！那就是<code>exec</code>函数。</p>
+
+<p>exec类函数有以下几种，目的都是一样，用可执行程序完全替换当前进程。</p>
+
+<p><code>cpp
+int execl    (char *pathname, char *arg0, char *arg1, ..., char *argn, NULL);
+int execle   (char *pathname, char *arg0, char *arg1, ..., char *argn, NULL, char *envp[]);
+int execlp   (char *pathname, char *arg0, char *arg1, ..., char *argn, NULL);
+int execlpe  (char *pathname, char *arg0, char *arg1, ..., char *argn, NULL, char *envp[]);
+int execv    (char *pathname, char *argv[]);
+int execve   (char *pathname, char *argv[], char *envp[]);
+int execvp   (char *pathname, char *argv[]);
+int execvpe  (char *pathname, char *argv[], char *envp[]);
+</code></p>
+
+<ul>
+<li>后缀p是指<code>PATH</code>，可以利用<code>$PATH</code>变量来查找子程序</li>
+<li>后缀l是指希望接收逗号分隔的参数列表，列表以<code>NULL</code>作为列表结束标志</li>
+<li>后缀v是指希望接收一个字符串数组作为参数列表，结尾为NULL</li>
+<li>后缀e是指传递参数<code>char *envp[]</code>用以改变子进程的运行环境，该环境也是一个以<code>NULL</code>结尾的字符串数组</li>
+</ul>
+
+
+<p>调用失败将返回-1，失败原因存在<code>errno</code>中。</p>
+
+<h3>线程</h3>
+
+<p>线程的函数都是<code>libpthread</code>（POSIX Threads）库中，编译时要加入<code>-lpthread</code>来连接才能使用。</p>
+
+<p>基本用法</p>
+
+<p>```cpp</p>
+
+<h1>include &lt;pthread.h></h1>
+
+<h1>include <cstdio></h1>
+
+<p>void <em>thread_func(void </em>arg) {</p>
+
+<pre><code>while (true) {
+    printf("Thread %s\n", (char *) arg);
+    sleep(2);
+}
+
+return NULL;
+</code></pre>
+
+<p>}</p>
+
+<p>int main() {</p>
+
+<pre><code>pthread_t pid;
+pthread_create(&amp;pid, NULL, thread_func, "Hello World");
+
+while (true) {
+    printf("Main Thread\n");
+    sleep(2);
+}
+return 0;
+</code></pre>
+
+<p>}
+```</p>
+
+<p>在<code>pthread</code>库中还有其它函数用以对线程操作</p>
+
+<p><code>cpp
+int pthread_create(pthead_t *restrict_tidp, const pthread_attr_t *restrict_attr, void *(*start_rtn)(void *), void *restrict_arg);
+int pthread_exit(void *return_val);
+int pthread_cancel(pthread_t thread);
+int pthread_join(pthread_t thread, void **retval);
+int pthread_attr_init(pthread_attr_t *attr);
+int pthread_attr_destroy(pthread_attr_t *attr);
+int pthread_kill(pthread_t thread, int sig);
+</code></p>
+
+<p>上述是比较常用的几个函数，调用成功均返回0，失败返回-1。</p>
+
+<ul>
+<li><p><code>pthread_create</code>的第二个参数是线程的属性，使用<code>pthread_attr_init</code>初始化和使用<code>pthread_attr_destroy</code>来销毁，具体属性可查看man</p></li>
+<li><p><code>pthread_exit</code>由线程自己调用，参数是退出时返回给主线程的值</p></li>
+<li><p><code>pthread_join</code>可以挂起当前线程等待参数一所指定的线程退出，退出后该程序的返回值会写入<code>retval</code>所指向的内存空间。若线程已结束，该函数立即返回并获得返回值。</p></li>
+<li><p><code>pthread_cancel</code>可以让一个线程主动结束另一个线程</p></li>
+<li><p><code>pthread_kill</code>可以向线程发送信号，信号定义在<code>signal.h</code>中，如<code>SIGINT</code>，<code>SIGKILL</code></p></li>
+</ul>
+
+
+<h2>同步与互斥</h2>
+
+<p>同步与互斥是并发编程经常遇到的问题，在线程和进程中都可以使用信号量，而POSIX Threads自己定义了一些「条件变量」和「互斥量」，可以简化操作。</p>
+
+<h3>信号量</h3>
+
+<p>在Linux中，有三种信号量</p>
+
+<ul>
+<li><p>POSIX有名信号量：使用POSIX IPC名字标识（通过特定函数，调用一个绝对文件路径作为参数，返回一个特定标识），可用于进程通信</p></li>
+<li><p>POSIX基于内存的信号量：存放在共享内存区（进程间共享内存区或者线程间共享内存区），可用于线程或进程间同步</p></li>
+<li><p>System V信号量：在内核中维护，可用于进程或线程同步</p></li>
+</ul>
+
+
+<p>信号量与「互斥锁」和「条件变量」有什么不同呢？</p>
+
+<ul>
+<li><p>互斥锁必须总是由给它上锁的程序解锁，信号量不用</p></li>
+<li><p>互斥锁要么被锁住要么被解开（类似于二元信号量）</p></li>
+</ul>
+
+
+<h4>有名信号量</h4>
+
+<p>```cpp</p>
+
+<h1>include &lt;fcntl.h>      /<em> For O_</em> constants */</h1>
+
+<h1>include &lt;sys/stat.h>   /<em> For mode constants </em>/</h1>
+
+<h1>include &lt;semaphore.h></h1>
+
+<p>sem_t <em>sem_open(const char </em>name, int oflag);
+sem_t <em>sem_open(const char </em>name, int oflag, mode_t mode, unsigned int value);</p>
+
+<p>int sem_close(sem_t <em>sem);
+int sem_unlink(const char </em>name);
+```</p>
+
+<p>一个进程关闭了之后，内核会自动的对其上打开的的所有有名信号量自动执行关闭，但这并不代表就删除了此信号量。每个信号量都有一个应用计数器记录当前的打开次数，当记录数大于0时，<code>unlink</code>就将其从文件系统中删除，但是其信号的析构要等到最后一个<code>sem_close</code>发生时为止。</p>
+
+<h4>基于内存的信号量</h4>
+
+<p>```cpp</p>
+
+<h1>include &lt;semaphore.h></h1>
+
+<p>int sem_init(sem_t *sem, int pshared, unsigned int value);</p>
+
+<p>int sem_destroy(sem_t *sem);
+```</p>
+
+<p>其中若要使用信号量进行进程同步，那么<code>sem</code>应分配在共享内存空间。而<code>pshared</code>的值有两种</p>
+
+<ul>
+<li><p>nonzero值：进程间共享，信号量应存放在共享内存空间</p></li>
+<li><p>zero值：线程间共享，信号量应存放在线程共享的内存空间</p></li>
+</ul>
+
+
+<h4>信号量的操作</h4>
+
+<p>```cpp</p>
+
+<h1>include &lt;semaphore.h></h1>
+
+<p>int sem_wait(sem_t <em>sem);
+int sem_trywait(sem_t </em>sem);
+int sem_timedwait(sem_t <em>sem, const struct timespec </em>abs_timeout);</p>
+
+<p>int sem_post(sem_t *sem);</p>
+
+<p>int sem_getvalue(sem_t <em>sem, int </em>sval);
+```</p>
+
+<p>其中<code>wait</code>函数是使信号量的值减1，若信号量的值为0，则把当前进程挂起直到信号量的值大于0。<code>sem_trywait</code>是非阻塞的，进程不挂起；<code>sem_timedwait</code>有一个超时时间，超过了时间进程就会继续执行。</p>
+
+<p><code>post</code>函数使信号量的值加1，<code>getvalue</code>函数可以获取当前信号量的值。</p>
+
+<h3>互斥量与条件变量</h3>
+
+<h4>互斥量</h4>
+
+<p>互斥量相当于二元信号量，它要么是0要么是1。而条件变量则是可以让线程等待某一特定条件发生。</p>
+
+<p>```cpp</p>
+
+<h1>include &lt;pthread.h></h1>
+
+<p>int pthread_mutex_init(pthread_mutex_t <em>restrict_mutex, const pthread_mutexattr_t </em>restrict_attr);
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;</p>
+
+<p>int pthread_mutexattr_init(pthread_mutexattr_t *mattr);</p>
+
+<p>int pthread_mutex_destroy(pthread_mutex_t <em>restrict_mutex);
+int pthread_mutexattr_destroy(pthread_mutexattr_t </em>mattr);</p>
+
+<p>int pthread_mutex_lock(pthread_mutex_t <em>restrict_mutex);
+int pthread_mutex_unlock(pthread_mutex_t </em>restrict_mutex);
+```</p>
+
+<p>其中第二行的<code>PTHREAD_MUTEX_INITIALIZER</code>是C++11的新特性，直接赋值。</p>
+
+<p><code>mutexattr</code>是互斥锁的属性，调用<code>pthread_mutexattr_init</code>后的默认值是<code>PTHREAD_PROCESS_PRIVATE</code>，即可以在进程内使用的互斥锁，另外的值是<code>PTHREAD_PROCESS_SHARED</code></p>
+
+<p>使用互斥量的方法很简单，在进入临界区时先调用<code>pthread_mutex_lock</code>，出临界区时再调用<code>pthread_mutex_unlock</code>即可。</p>
+
+<h4>条件变量</h4>
+
+<p>```cpp</p>
+
+<h1>include &lt;pthread.h></h1>
+
+<p>int pthread_cond_init(pthread_mutex_t <em>restrict_cond, const pthread_condattr_t </em>cond_attr);
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;</p>
+
+<p>int pthread_condattr_init(pthread_condattr_t *cond_attr);</p>
+
+<p>int pthread_condattr_destroy(pthread_condattr_t <em>cond_attr);
+int pthread_cond_destroy(pthread_cond_t </em>restrict_cond);</p>
+
+<p>int pthread_cond_wait(pthread_cond_t <em>cond, pthead_mutex_t </em>mutex);
+int pthread_cond_signal(pthread_cond_t <em>cond);
+int pthread_cond_brocast(pthread_cond_t </em>cond);
+```</p>
+
+<p>初始化和属性都和互斥量差不多，主要在于<code>wait</code>和<code>signal</code>的使用。条件变量需要一个互斥量来保证每次都只能有一个线程在等待条件，所以在调用<code>pthread_cond_wait</code>之前先要把<code>mutex</code>给锁上，如下</p>
+
+<p>```cpp</p>
+
+<h1>include &lt;pthread.h></h1>
+
+<p>pthread_mutex_t mutex;
+pthread_cond_t cond;</p>
+
+<p>void <em>thread_func(void </em>argument) {</p>
+
+<pre><code>pthread_mutex_lock(&amp;mutex); // 必须
+pthread_cond_wait(&amp;cond, &amp;mutex);
+pthread_mutex_unlock(&amp;mutex); // 必须
+
+// Do something
+
+return NULL;
+</code></pre>
+
+<p>}</p>
+
+<p>int main() {</p>
+
+<pre><code>pthread_mutex_init(&amp;mutex);
+pthread_cond_init(&amp;cond);
+
+while (true) {
+    // Do something
+
+    pthread_cond_signal(&amp;cond);
+    //pthread_cond_brocast(&amp;cond);
+}
+
+pthread_mutex_destroy(&amp;mutex);
+pthread_cond_destroy(&amp;cond);
+
+return 0;
+</code></pre>
+
+<p>}
+```</p>
+
+<p><code>signal</code>与<code>brocast</code>的不同是<code>signal</code>每次只唤醒等待在<code>pthread_cond_wait</code>上的一个线程，而<code>brocast</code>则唤醒所有等待的线程。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Arch软件安装小记之“Gnome Tweak Tool”]]></title>
