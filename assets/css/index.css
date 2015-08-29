@@ -1,0 +1,83 @@
+body {
+    color: #5a5a5a;
+}
+
+.navbar-static-top {
+    margin-bottom: 0px;
+}
+
+.footer {
+    padding: 40px 0;
+    color: #999;
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+}
+
+.nav-header-name {
+    font-family: 'Orbitron', sans-serif;
+}
+
+.nav-header-profession {
+    font-family: 'Orbitron', sans-serif;
+    color: #999;
+    border-left: 1px solid #e5e5e5;
+    margin-left: 10px;
+}
+
+.banner {
+    height: 600px;
+    text-align: center;
+    background-image: url("/assets/images/banner.png");
+    background-size: cover;
+    background-repeat: no-repeat;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+    text-shadow: 0 0 10px black;
+}
+
+.banner-down-wrapper {
+    position: relative;
+    bottom: 110px;
+    z-index: 500;
+    opacity: 0.8;
+}
+
+.banner-down-inner {
+    position: absolute;
+    width: 50px;
+    height: 80px;
+    background: #AA0000;
+    left: 50%;
+    text-align: center;
+    padding-top: 10px;
+    color: white;
+    font-size: 20px;
+}
+
+/*.banner > .jumbotron {
+    background: rgba(0, 0, 0, 0);
+}*/
+
+.vertical-center {
+    /*min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
+    /*min-height: 100vh; /* These two lines are counted as one :-)       */
+    min-height: 600px;
+
+    display: flex;
+    align-items: center;
+}
+
+.about-me {
+    margin-top: 150px;
+    margin-bottom: 50px;
+    text-align: center;
+    width: 40%;
+    font-family: 'Nunito', sans-serif;
+}
+
+.about-me-text {
+    font-weight: lighter;
+    color: #999;
+    padding-top: 30px;
+    padding-bottom: 30px;
+}
