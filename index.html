@@ -96,7 +96,7 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
     <script type="text/javascript">
-        $(window).on('resize', function () {
+        function resize() {
             var width = $(window).width();
 
             if (width > 800) {
@@ -107,6 +107,14 @@
                 var height = 400 * (width / 800.0);
                 $('.banner').height(height < 300 ? 300 : height);
             }
+        }
+
+        $(window).on('resize', function () {
+            resize()
+        })
+
+        $(window).on('load', function () {
+            resize()
         })
     </script>
 </body>
