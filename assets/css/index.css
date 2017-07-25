@@ -25,9 +25,9 @@ body {
 }
 
 .banner {
-    /* height: 600px; */
+    height: 400px;
     text-align: center;
-    background-image: url("/assets/images/banner.png");
+    background-image: url("/assets/images/bg.png");
     background-size: cover;
     -webkit-background-size: cover;
     background-position: center;
@@ -66,7 +66,7 @@ body {
     /*min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
     /*min-height: 100vh; /* These two lines are counted as one :-)       */
     /*min-height: 400px;*/
-    height: 400;
+    /* height: 400; */
     display: flex;
     align-items: center;
 }
