@@ -25,10 +25,13 @@ body {
 }
 
 .banner {
-    height: 600px;
+    /* height: 600px; */
     text-align: center;
     background-image: url("/assets/images/banner.png");
     background-size: cover;
+    -webkit-background-size: cover;
+    background-position: center;
+    /* min-height: 50%; */
     background-repeat: no-repeat;
     color: white;
     font-family: 'Nunito', sans-serif;
@@ -54,6 +57,7 @@ body {
     font-size: 20px;
 }
 
+
 /*.banner > .jumbotron {
     background: rgba(0, 0, 0, 0);
 }*/
@@ -61,8 +65,8 @@ body {
 .vertical-center {
     /*min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
     /*min-height: 100vh; /* These two lines are counted as one :-)       */
-    min-height: 600px;
-
+    /*min-height: 400px;*/
+    height: 400;
     display: flex;
     align-items: center;
 }
@@ -78,6 +82,6 @@ body {
 .about-me-text {
     font-weight: lighter;
     color: #999;
-    padding-top: 30px;
-    padding-bottom: 30px;
+    /*padding-top: 1%;
+    padding-bottom: 1%;*/
 }
